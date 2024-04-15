@@ -8,13 +8,10 @@ clean:
 wasm: table.h instructions.ts
 	make -C wasm
 
-libretro: table.h
-	make -C libretro
-
 instructions.ts: ./tools/convert.py ./tools/s1c88.csv
 	python3 ./tools/convert.py > ./instructions.ts
 
 table.h: ./tools/table.py ./tools/s1c88.csv
 	python3 ./tools/table.py > ./include/table.h
 
-.PHONY: all clean wasm libretro
+.PHONY: all clean wasm
