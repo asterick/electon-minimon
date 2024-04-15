@@ -31,11 +31,14 @@ const VRAM_HEIGHT = 64;
 export default class Screen extends Component {
 	static contextType = SystemContext;
 
+  private context:Minimon;
   private _ctx:WebGL2RenderingContext | null;
   private _vram:WebGLTexture | null;
   private _copyBuffer:WebGLBuffer | null;
+  private _shader:WebGLProgram | null;
+
   private contrast:number;
-  private context:Minimon;
+  private animID:number;
 
   constructor(props) {
 		super(props);
@@ -44,55 +47,51 @@ export default class Screen extends Component {
     this._ctx = null;
     this._vram = null;
     this._copyBuffer = null;
-    this.constrast = 0x20;
+    this._shader = null;
+    this.animID = 0;
+
+    this.constrast = 0.5;
 	}
 
 	componentDidMount() {
-		const system:Minimon = this.context;
+    this._ctx = this._ref.current.getContext("webgl2", {
+      preserveDrawingBuffer: true,
+      alpha: false
+    });
 
-		this._repainter();
-    system.repaint = (memory:Uint8Array, constrast:number) => {
-      const gl = this._ctx;
-
-      if (!gl) return ;
-
-      gl.bindTexture(gl.TEXTURE_2D, this._vram);
-
-      gl.texSubImage2D(
-        gl.TEXTURE_2D, 0,
-        0, 0, VRAM_WIDTH, VRAM_HEIGHT,
-        gl.RED, gl.UNSIGNED_BYTE,
-        memory);
-    }
+    this.init();
+    this.redraw();
+    this.context.repaint = this.updateTexture;
   }
 
 	componentWillUnmount() {
-		cancelAnimationFrame(this._af);
+		cancelAnimationFrame(this.animID);
 		this._ctx = null;
+    this.animID = 0;
 
 		delete this.context.repaint;
 	}
 
-    onDragOver (e) {
-        e.preventDefault();
-        e.dataTransfer.dropEffect = "copy";
-    }
+  onDragOver (e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+  }
 
-    onDragLeave () {
-    }
+  onDragLeave () {
+  }
 
-    onDrop (e) {
-        e.preventDefault();
+  onDrop (e) {
+    e.preventDefault();
 
-        var file = e.dataTransfer.files[0],
-            reader = new FileReader();
+    var file = e.dataTransfer.files[0],
+    reader = new FileReader();
 
-        reader.onload = (e) => {
-        	this.context.system.load(e.target.result);
-        };
+    reader.onload = (e) => {
+      this.context.system.load(e.target.result);
+    };
 
-        reader.readAsArrayBuffer(file);
-    }
+    reader.readAsArrayBuffer(file);
+  }
 
 	init() {
 		const gl = this._ctx;
@@ -108,32 +107,10 @@ export default class Screen extends Component {
 		gl.clearColor(0xB7 / 255, 0xCA / 255, 0xB7 / 255, 1.0);
 		gl.clear(gl.COLOR_BUFFER_BIT);
 
-		this._shader = this._createShader(VertexShader, FragmentShader);
-
-		this._copyBuffer = gl.createBuffer();
-		gl.bindBuffer(gl.ARRAY_BUFFER, this._copyBuffer);
-		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-       1, 1, 0.75, 1,
-       1,-1, 0.75, 0,
-      -1, 1,    0, 1,
-      -1,-1,    0, 0
-    ]), gl.STATIC_DRAW);
-
-		this._vram = gl.createTexture();
-
-		gl.bindTexture(gl.TEXTURE_2D, this._vram);
-		gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, 128, 64, 0, gl.RED, gl.UNSIGNED_BYTE, new Uint8Array(0x2000));
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-	}
-
-	_createShader (vertex, fragment) {
-		const gl = this._ctx;
-
 		var fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
 		var vertexShader =  gl.createShader(gl.VERTEX_SHADER);
 
-		gl.shaderSource(vertexShader, vertex);
+		gl.shaderSource(vertexShader, VertexShader);
 		gl.compileShader(vertexShader);
 
 		if (!gl.getShaderParameter(vertexShader, gl.COMPILE_STATUS)) {
@@ -141,7 +118,7 @@ export default class Screen extends Component {
 			return null;
 		}
 
-		gl.shaderSource(fragmentShader, fragment);
+		gl.shaderSource(fragmentShader, FragmentShader);
 		gl.compileShader(fragmentShader);
 
 		if (!gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS)) {
@@ -175,72 +152,82 @@ export default class Screen extends Component {
 			uniforms[uni.name] = gl.getUniformLocation(shaderProgram, uni.name);
 		}
 
-		return {
+		this._shader =  {
 			attributes: attributes,
 			uniforms: uniforms,
 			program: shaderProgram
 		};
+
+		this._copyBuffer = gl.createBuffer();
+		gl.bindBuffer(gl.ARRAY_BUFFER, this._copyBuffer);
+		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+       1,-1, VRAM_WIDTH, VRAM_HEIGHT,
+       1, 1, VRAM_WIDTH,           0,
+      -1,-1,          0, VRAM_HEIGHT,
+      -1, 1,          0,           0
+    ]), gl.STATIC_DRAW);
+
+		this._vram = gl.createTexture();
+
+		gl.bindTexture(gl.TEXTURE_2D, this._vram);
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, 128, 64, 0, gl.RED, gl.UNSIGNED_BYTE, new Uint8Array(0x2000));
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 	}
 
-	_repainter() {
-		var time = 0;
+	private const updateTexture = (memory:Uint8Array, constrast:number) => {
+    const gl = this._ctx;
 
-		this._af = requestAnimationFrame(() => {
-			if (this._previousRef != this._ref.current) {
-				this._ctx = this._ref.current.getContext("webgl2", {
-					preserveDrawingBuffer: true,
-					alpha: false
-				});
-				this._previousRef = this._ref.current;
+    if (!gl) return ;
 
-				this.init();
-			}
+    this.contrast = constrast / 0x3F;
 
-			const gl = this._ctx;
-			const width = this._ref.current.clientWidth;
-			const height = this._ref.current.clientHeight;
-			const now = Date.now();
-			const delta = (now - this._time) / 1000;
+    crypto.getRandomValues(memory);
+    gl.bindTexture(gl.TEXTURE_2D, this._vram);
+    gl.texSubImage2D(
+      gl.TEXTURE_2D, 0,
+      0, 0, VRAM_WIDTH, VRAM_HEIGHT,
+      gl.RED, gl.UNSIGNED_BYTE,
+      memory);
+  }
 
-			this._time = now;
+  private const redraw = () => {
+    const gl = this._ctx;
+    const width = this._ref.current.clientWidth;
+    const height = this._ref.current.clientHeight;
 
-			if (width != this._ref.current.width || height != this._ref.current.height) {
-				this._ref.current.width = width;
-				this._ref.current.height = height;
+    if (width != this._ref.current.width || height != this._ref.current.height) {
+      this._ref.current.width = width;
+      this._ref.current.height = height;
 
-				if (width * 2 / 3 > height) {
-					let fit_x = Math.floor(height * 3 / 2);
-					gl.viewport((width - fit_x) / 2, 0, fit_x, height);
-				} else {
-					let fit_y = width * 2 / 3;
-					gl.viewport(0, (height - fit_y) / 2, width, fit_y);
-				}
+      if (width * 2 / 3 > height) {
+        let fit_x = Math.floor(height * 3 / 2);
+        gl.viewport((width - fit_x) / 2, 0, fit_x, height);
+      } else {
+        let fit_y = width * 2 / 3;
+        gl.viewport(0, (height - fit_y) / 2, width, fit_y);
+      }
 
 
-				gl.clear(gl.COLOR_BUFFER_BIT);
-			}
+      gl.clear(gl.COLOR_BUFFER_BIT);
+    }
 
-			gl.useProgram(this._shader.program);
+    gl.useProgram(this._shader.program);
 
-			gl.activeTexture(gl.TEXTURE0);
-			gl.bindTexture(gl.TEXTURE_2D, this._vram);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, this._vram);
 
-			gl.uniform1f(this._shader.uniforms.clock, now / 1000 % (24*60*60));
-			gl.uniform1f(this._shader.uniforms.time, delta);
+    gl.uniform1f(this._shader.uniforms.contrast, this.contrast);
 
-			gl.uniform1f(this._shader.uniforms.analog, 50);
-			gl.uniform1i(this._shader.uniforms.simulate_gray, 1);
+    gl.bindBuffer(gl.ARRAY_BUFFER, this._copyBuffer);
+    gl.enableVertexAttribArray(this._shader.attributes.position);
+    gl.enableVertexAttribArray(this._shader.attributes.uv);
+    gl.vertexAttribPointer(this._shader.attributes.position, 2, gl.FLOAT, false, 16, 0);
+    gl.vertexAttribPointer(this._shader.attributes.uv, 2, gl.FLOAT, false, 16, 8);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
-			gl.bindBuffer(gl.ARRAY_BUFFER, this._copyBuffer);
-			gl.enableVertexAttribArray(this._shader.attributes.position);
-			gl.enableVertexAttribArray(this._shader.attributes.uv);
-			gl.vertexAttribPointer(this._shader.attributes.position, 2,       gl.FLOAT, false, 16, 0);
-			gl.vertexAttribPointer(      this._shader.attributes.uv, 2,       gl.FLOAT, false, 16, 8);
-			gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-
-			this._repainter();
-		});
-	}
+    this.animID = requestAnimationFrame(this.redraw);
+  }
 
 	render() {
 		return (

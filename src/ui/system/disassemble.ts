@@ -17,6 +17,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
 import * as Table from "../../../core/instructions";
+import Minimon from "./index";
 
 function toHex(v, c) {
 	v = v.toString(16).toUpperCase();
@@ -25,8 +26,12 @@ function toHex(v, c) {
 }
 
 export class Disassembler {
-	constructor(system) {
+  private _system:Minimon;
+  private _address:Number;
+
+  constructor(system:Minimon) {
 		this._system = system;
+    this._address = 0;
 	}
 
 	_read8() {

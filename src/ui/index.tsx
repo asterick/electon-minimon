@@ -20,13 +20,14 @@ export async function getApp() {
       children: [
         {
           tabs: [
-            { id: 'screen', title: 'Screen', content: <Screen /> }
+            { id: 'screen', title: 'Screen', content: <Screen /> },
+            { id: 'registers', title: "Registers", content: <div></div> }
           ]
         }
       ]
     }
   };
-  
+
   return (
     <SystemContext.Provider value={system}>
       <DockLayout
