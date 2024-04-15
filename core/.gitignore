@@ -1,0 +1,4 @@
+minimon_libretro.*
+obj
+include/table.h
+instructions.ts
