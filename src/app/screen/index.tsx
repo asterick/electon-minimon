@@ -111,7 +111,7 @@ export default class Screen extends Component {
 		gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
 		gl.colorMask(true, true, true, false);
-		gl.clearColor(0xB7 / 255, 0xCA / 255, 0xB7 / 255, 1.0);
+		gl.clearColor(1.0, 1.0, 1.0, 1.0);
 		gl.clear(gl.COLOR_BUFFER_BIT);
 
 		var vertexShader =  gl.createShader(gl.VERTEX_SHADER);
@@ -192,6 +192,8 @@ export default class Screen extends Component {
     const width = this.ref.current.clientWidth;
     const height = this.ref.current.clientHeight;
 
+    this.animID = requestAnimationFrame(this.redraw);
+
     if (width != this.ref.current.width || height != this.ref.current.height) {
       this.ref.current.width = width;
       this.ref.current.height = height;
@@ -220,8 +222,6 @@ export default class Screen extends Component {
     gl.vertexAttribPointer(this.attributes.position, 2, gl.FLOAT, false, 16, 0);
     gl.vertexAttribPointer(this.attributes.uv, 2, gl.FLOAT, false, 16, 8);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-
-    this.animID = requestAnimationFrame(this.redraw);
   }
 
 	render() {
