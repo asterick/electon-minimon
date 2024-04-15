@@ -22,6 +22,9 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 const auto LCD_SPEED	= 72 * 0x41;	// Line scan frequency
 
+static const int LCD_WIDTH = 96;
+static const int LCD_HEIGHT = 64;
+
 namespace LCD {
 	struct State {
 		uint8_t gddram[9][132];

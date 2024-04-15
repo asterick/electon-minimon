@@ -26,7 +26,8 @@ const TYPE_UINT32 = 4;
 const TYPE_INT8 = 5;
 const TYPE_INT16 = 6;
 const TYPE_INT32 = 7;
-const TYPE_BOOL = 8;
+const TYPE_FLOAT32 = 8;
+const TYPE_BOOL = 9;
 
 const SIZES = {
 	[TYPE_UINT8]: 1,
@@ -35,6 +36,7 @@ const SIZES = {
 	[TYPE_INT8]: 1,
 	[TYPE_INT16]: 2,
 	[TYPE_INT32]: 4,
+	[TYPE_FLOAT32]: 4,
 	[TYPE_BOOL]: 1
 };
 
@@ -45,6 +47,7 @@ const GETTERS = {
 	[TYPE_INT8]: 'getInt8',
 	[TYPE_INT16]: 'getInt16',
 	[TYPE_INT32]: 'getInt32',
+	[TYPE_FLOAT32]: 'getFloat32',
 	[TYPE_BOOL]: 'getUint8'
 }
 
@@ -55,6 +58,7 @@ const SETTERS = {
 	[TYPE_INT8]: 'setInt8',
 	[TYPE_INT16]: 'setInt16',
 	[TYPE_INT32]: 'setInt32',
+	[TYPE_FLOAT32]: 'setFloat32',
 	[TYPE_BOOL]: 'setUint8'
 }
 
@@ -65,6 +69,7 @@ const ARRAYTYPE = {
 	[TYPE_INT8]: Int8Array,
 	[TYPE_INT16]: Int16Array,
 	[TYPE_INT32]: Int32Array,
+	[TYPE_FLOAT32]: Float32Array,
 	[TYPE_BOOL]: Uint8Array
 }
 
@@ -122,15 +127,15 @@ function array(buffer, offset, type, my_def, elements, ... size) {
 export function struct(buffer, my_def, offset) {
 	let dv = new DataView(buffer);
 	let out = {};
-	
+
 	const size = dv.getUint32(my_def, true);
 	let fields = dv.getUint32(my_def + 4, true);
-	
+
 	for (;;) {
 		let type = dv.getUint32(fields, true);
 
 		if (type == TYPE_END) break ;
-		
+
 		let name = utf8(dv, fields + 4);
 
 		let target = dv.getUint32(fields + 8, true);

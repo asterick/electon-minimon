@@ -31,6 +31,7 @@ enum FieldType : uint32_t {
 	TYPE_INT8,
 	TYPE_INT16,
 	TYPE_INT32,
+	TYPE_FLOAT32,
 	TYPE_BOOL
 };
 
@@ -263,26 +264,38 @@ static const StructDecl TimersState = {
 	}
 };
 
+// audio.output, AUDIO_BUFFER_LENGTH
+
+static const StructDecl MachineBuffers = {
+	sizeof(Machine::Buffers),
+	(const FieldDecl[]) {
+		FIELD(  "cartridge", Machine::Buffers,   cartridge,   TYPE_UINT8, SIZE(0x200000)),
+		FIELD("framebuffer", Machine::Buffers, framebuffer,   TYPE_UINT8, SIZE(LCD_WIDTH, LCD_WIDTH)),
+		FIELD(      "audio", Machine::Buffers,       audio, TYPE_FLOAT32, SIZE(AUDIO_BUFFER_LENGTH)),
+		{ TYPE_END }
+	}
+};
+
 static const StructDecl MachineState = {
 	sizeof(Machine::State),
 	(const FieldDecl[]) {
-		STRUCT("cpu",   	Machine::State, reg, CpuState),
-		STRUCT("ctrl",  	Machine::State, ctrl, ControlState),
-		STRUCT("gpio",  	Machine::State, gpio, GpioState),
-		STRUCT("rtc",   	Machine::State, rtc, RtcState),
-		STRUCT("irq",   	Machine::State, irq, IrqState),
-		STRUCT("tim256",	Machine::State, tim256, Tim256State),
-		FIELD("ram",   		Machine::State, ram, TYPE_UINT8, SIZE(0x1000)),
-		FIELD("cartridge",	Machine::State, cartridge, TYPE_UINT8, SIZE(0x200000)),
-		STRUCT("lcd",		Machine::State, lcd, LcdState),
-		STRUCT("input",		Machine::State, input, InputState),
-		STRUCT("blitter",	Machine::State, blitter, BlitterState),
-		STRUCT("overlay",	Machine::State, overlay, BlitterOverlay),
-		STRUCT("timers",	Machine::State, timers, TimersState),
-		FIELD("bus_cap", 	Machine::State, bus_cap, TYPE_UINT8),
-		FIELD("clocks", 	Machine::State, clocks, TYPE_INT32),
-		FIELD("osc1_overflow", Machine::State, osc1_overflow, TYPE_INT32),
-		FIELD("status", Machine::State, status, TYPE_UINT8),
+		STRUCT("buffers",   		Machine::State, buffers, MachineBuffers),
+		STRUCT("cpu",   		Machine::State, reg, CpuState),
+		STRUCT("ctrl",  		Machine::State, ctrl, ControlState),
+		STRUCT("gpio",  		Machine::State, gpio, GpioState),
+		STRUCT("rtc",   		Machine::State, rtc, RtcState),
+		STRUCT("irq",   		Machine::State, irq, IrqState),
+		STRUCT("tim256",		Machine::State, tim256, Tim256State),
+		FIELD("ram",   			Machine::State, ram, TYPE_UINT8, SIZE(0x1000)),
+		STRUCT("lcd",			Machine::State, lcd, LcdState),
+		STRUCT("input",			Machine::State, input, InputState),
+		STRUCT("blitter",		Machine::State, blitter, BlitterState),
+		STRUCT("overlay",		Machine::State, overlay, BlitterOverlay),
+		STRUCT("timers",		Machine::State, timers, TimersState),
+		FIELD("bus_cap", 		Machine::State, bus_cap, TYPE_UINT8),
+		FIELD("clocks", 		Machine::State, clocks, TYPE_INT32),
+		FIELD("osc1_overflow",	Machine::State,	osc1_overflow, TYPE_INT32),
+		FIELD("status", 		Machine::State,	status, TYPE_UINT8),
 		{ TYPE_END }
 	}
 };

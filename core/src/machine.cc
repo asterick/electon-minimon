@@ -26,7 +26,7 @@ static const uint8_t bios[0x2000] = {
 };
 
 extern "C" const char* get_version() {
-	return "0.1.0";
+	return "0.2.0";
 }
 
 extern "C" void cpu_reset(Machine::State& cpu) {
@@ -61,7 +61,7 @@ extern "C" void set_sample_rate(Machine::State& cpu, int rate) {
 }
 
 void cpu_clock(Machine::State& cpu, int cycles) {
-	const int osc3 = cycles * OSC3_SPEED / CPU_SPEED;	
+	const int osc3 = cycles * OSC3_SPEED / CPU_SPEED;
 	int osc1 = 0;
 
 	cpu.osc1_overflow += osc3 * OSC1_SPEED;
@@ -193,7 +193,7 @@ static inline void cpu_write_reg(Machine::State& cpu, uint8_t data, uint32_t add
 }
 
 static inline uint8_t cpu_read_cart(Machine::State& cpu, uint32_t address) {
-    return cpu.cartridge[address % sizeof(cpu.cartridge)];
+    return cpu.buffers.cartridge[address % sizeof(cpu.buffers.cartridge)];
 }
 
 static inline void cpu_write_cart(Machine::State& cpu, uint8_t data, uint32_t address) {
@@ -210,7 +210,7 @@ extern "C" uint8_t cpu_read(Machine::State& cpu, uint32_t address) {
 			return cpu.bus_cap = cpu_read_reg(cpu, address);
 		default:
 			if (Control::is_cart_enabled(cpu.ctrl)) {
-				return cpu.bus_cap = cpu_read_cart(cpu, address);		
+				return cpu.bus_cap = cpu_read_cart(cpu, address);
 			} else {
 				return cpu.bus_cap;
 			}
@@ -219,7 +219,7 @@ extern "C" uint8_t cpu_read(Machine::State& cpu, uint32_t address) {
 
 extern "C" void cpu_write(Machine::State& cpu, uint8_t data, uint32_t address) {
 	cpu.bus_cap = data;
-	
+
 	switch (address) {
 		case 0x0000 ... 0x0FFF:
 			break ;
@@ -233,7 +233,7 @@ extern "C" void cpu_write(Machine::State& cpu, uint8_t data, uint32_t address) {
 			if (Control::is_cart_enabled(cpu.ctrl)) {
 				cpu_write_cart(cpu, data, address);
 			}
-			break ;	
+			break ;
 	}
 }
 

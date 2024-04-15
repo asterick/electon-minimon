@@ -101,7 +101,7 @@ export default class Minimon {
 			clearInterval(this.runTimer);
 			this.runTimer = null;
 		}
-		
+
 		this.update();
 	}
 
@@ -164,13 +164,12 @@ export default class Minimon {
 		this.updateInput();
 	}
 
-	audio_push = (address:number, frames: number) => {
-		let samples = new Float32Array(this.exports.memory.buffer, address, frames);
-		this.audio.push(samples);
+	audio_push = () => {
+		this.audio.push(this.state.buffers.audio);
 	}
 
-	flip_screen = (address:number) => {
-		this.repaint(this.machineBytes, address);
+	flip_screen = (contrast:number) => {
+		this.repaint(this.state.buffers.framebuffer, contrast);
 	}
 
 	debug_print = (a:number) => {

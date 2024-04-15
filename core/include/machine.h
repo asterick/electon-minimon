@@ -95,6 +95,12 @@ namespace Machine {
 		STATUS_CRASHED
 	};
 
+  struct Buffers {
+    float audio[AUDIO_BUFFER_LENGTH];
+    uint8_t framebuffer[LCD_HEIGHT][LCD_WIDTH];
+		uint8_t cartridge[0x200000];
+  };
+
 	struct State {
 		CPU::State reg;
 		IRQ::State irq;
@@ -118,7 +124,7 @@ namespace Machine {
 		 	Blitter::Overlay overlay;
 		};
 
-		uint8_t cartridge[0x200000];
+    Buffers buffers;
 	};
 }
 

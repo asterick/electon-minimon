@@ -29,9 +29,8 @@ namespace Audio {
 		uint8_t volume;
 		uint8_t enable;
 
-		float output[AUDIO_BUFFER_LENGTH];
 		int write_index;
-	
+
 		int sampleRate;
 		int sampleAccumulator;
 		int sampleCount;

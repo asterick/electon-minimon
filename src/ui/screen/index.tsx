@@ -29,34 +29,37 @@ const VRAM_HEIGHT = 64;
 
 export default class Screen extends Component {
 	static contextType = SystemContext;
+  static constrast:number;
 
 	constructor(props) {
 		super(props);
 
 		this._ref = createRef();
 		this._frameIndex = 0;
+    this.constrast = 0x20;
 	}
 
 	componentDidMount() {
 		const system = this.context;
 
 		this._repainter();
-		system.repaint = (memory, address) => {
-			const gl = this._ctx;
-
-			if (!gl) return ;
-
-			this._frameIndex = (this._frameIndex + 1) % 4;
-			gl.bindTexture(gl.TEXTURE_2D, this._vram);
-
-			gl.texSubImage2D(
-				gl.TEXTURE_2D, 0, 
-				0, this._frameIndex * VRAM_HEIGHT,
-				VRAM_WIDTH, VRAM_HEIGHT, 
-				gl.RGBA_INTEGER, gl.UNSIGNED_BYTE, 
-				memory, address);
-		}
 	}
+
+  repaint = (memory:Uint8Array, constrast:number) => {
+    const gl = this._ctx;
+
+    if (!gl) return ;
+
+    this._frameIndex = (this._frameIndex + 1) % 4;
+    gl.bindTexture(gl.TEXTURE_2D, this._vram);
+
+    gl.texSubImage2D(
+      gl.TEXTURE_2D, 0,
+      0, this._frameIndex * VRAM_HEIGHT,
+      VRAM_WIDTH, VRAM_HEIGHT,
+      gl.RGBA_INTEGER, gl.UNSIGNED_BYTE,
+      memory);
+  }
 
 	componentWillUnmount() {
 		cancelAnimationFrame(this._af);
@@ -95,7 +98,7 @@ export default class Screen extends Component {
 
 		gl.enable(gl.BLEND);
 		gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-		
+
 		gl.colorMask(true, true, true, false);
 		gl.clearColor(0xB7 / 255, 0xCA / 255, 0xB7 / 255, 1.0);
 		gl.clear(gl.COLOR_BUFFER_BIT);
@@ -173,12 +176,12 @@ export default class Screen extends Component {
 
 		this._af = requestAnimationFrame(() => {
 			if (this._previousRef != this._ref.current) {
-				this._ctx = this._ref.current.getContext("webgl2", { 
+				this._ctx = this._ref.current.getContext("webgl2", {
 					preserveDrawingBuffer: true,
 					alpha: false
 				});
 				this._previousRef = this._ref.current;
-			
+
 				this.init();
 			}
 
@@ -202,7 +205,7 @@ export default class Screen extends Component {
 					gl.viewport(0, (height - fit_y) / 2, width, fit_y);
 				}
 
-				
+
 				gl.clear(gl.COLOR_BUFFER_BIT);
 			}
 
@@ -231,7 +234,7 @@ export default class Screen extends Component {
 		return (
 			<div onDragOver={(e) => this.onDragOver(e)}
 				onDragLeave={(e) => this.onDragLeave(e)}
-				onDrop={(e) => this.onDrop(e)} 
+				onDrop={(e) => this.onDrop(e)}
 				className="screen">
 				<canvas ref={this._ref} />
 			</div>

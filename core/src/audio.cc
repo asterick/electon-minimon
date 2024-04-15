@@ -23,13 +23,12 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 #include "debug.h"
 
-extern "C" void audio_push(float*, int frames);
+extern "C" void audio_push();
 
 void Audio::reset(Audio::State& audio) {
 	audio.enable = 0;
 	audio.volume = 0;
 	audio.write_index = 0;
-	memset(&audio.output, 0, sizeof(audio.output));
 }
 
 void Audio::setSampleRate(Audio::State& audio, int sampleRate) {
@@ -65,10 +64,10 @@ void Audio::clock(Machine::State& state, int osc3) {
 		}
 
 
-		audio.output[audio.write_index++] = volume;
-		
+		state.buffers.audio[audio.write_index++] = volume;
+
 		if (audio.write_index >= AUDIO_BUFFER_LENGTH) {
-			audio_push(audio.output, AUDIO_BUFFER_LENGTH);
+			audio_push();
 			audio.write_index = 0;
 		}
 
