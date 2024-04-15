@@ -16,7 +16,7 @@ ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-import * as Table from "../../../core/instructions";
+import * as Table from "../../core/instructions";
 import Minimon from "./index";
 
 function toHex(v, c) {

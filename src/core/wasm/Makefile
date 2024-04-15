@@ -3,7 +3,7 @@ BUILDDIR=obj
 
 SOURCES=$(filter-out $(SRCDIR)/retroarch.cc, $(wildcard $(SRCDIR)/*.cc))
 OBJECTS=$(patsubst $(SRCDIR)/%.cc,$(BUILDDIR)/%.o,$(SOURCES)) $(BUILDDIR)/main.o
-TARGET=../../assets/libminimon.wasm
+TARGET=../../../assets/libminimon.wasm
 
 LD=$(if $(shell which wasm-ld),wasm-ld,wasm-ld-10)
 DUMP=llvm-dwarfdump
