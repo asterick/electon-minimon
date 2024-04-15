@@ -169,7 +169,7 @@ export default class Minimon {
 	}
 
 	flip_screen = (contrast:number) => {
-		this.repaint(this.state.buffers.framebuffer, contrast);
+    this.repaint(this.state.buffers.framebuffer, contrast);
 	}
 
 	debug_print = (a:number) => {
