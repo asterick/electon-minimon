@@ -1,10 +1,44 @@
 class StreamAudioProcessor extends AudioWorkletProcessor {
+    constructor() {
+        super();
+
+        this.queue = null;
+        this.working = null;
+        this.sample = 0;
+
+        this.port.onmessage = (event) => {
+            this.queue = event.data;
+        }
+    }
+
     process(inputs, outputs, parameters) {
         const output = outputs[0];
-        
+
         output.forEach((channel) => {
-            for (let i = 0; i < channel.length; i++) {
-                channel[i] = 0;
+            let i = 0;
+
+            // Dequeue sample buffers
+            while (i < channel.length) {
+                if (this.working == null) {
+                    if (this.queue) {
+                        this.working = this.queue;
+                        this.sample = 0;
+                        this.queue = null;
+                    } else {
+                        break ;
+                    }
+                }
+
+                channel[i++] = this.working[this.sample++];
+
+                if (this.sample >= this.working.length) {
+                    this.working = null;
+                }
+            }
+
+            // Underflow
+            while (i < channel.length) {
+                channel[i++] = 0;
             }
         });
 

@@ -22,7 +22,7 @@ const audioContext = new AudioContext();
 const workletPromise = audioContext.audioWorklet.addModule(new URL('./audio.worklet.js', import.meta.url))
 
 export default class Audio {
-    private node:AudioWorkletNode;
+    private node:AudioWorkletNode | null;
     private buffer:Float32Array;
     private writeIndex:number;
     private sample:number;
@@ -31,6 +31,7 @@ export default class Audio {
         this.buffer = new Float32Array(BUFFER_LENGTH * 4);
         this.writeIndex = 0;
         this.sample = 0.0;
+        this.node = null;
 
         workletPromise.then(() => {
             this.node = new AudioWorkletNode(
@@ -39,21 +40,14 @@ export default class Audio {
             );
     
             this.node.connect(audioContext.destination);
-        })
+        });
     }
 
     get sampleRate() {
         return audioContext.sampleRate;
     }
 
-    push(f) {
-        for (let i = 0; i < f.length; i++) {
-            this.buffer[this.writeIndex++] = f[i];
-            
-            if (this.writeIndex >= this.buffer.length) {
-                // Send samples to the worklet
-                this.writeIndex = 0;
-            }            
-        }
+    push(samples:Float32Array) {
+        this.node?.port.postMessage(samples)
     }
 }
