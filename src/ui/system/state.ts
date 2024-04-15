@@ -119,7 +119,7 @@ function array(buffer, offset, type, my_def, elements, ... size) {
 	return new (ARRAYTYPE[type])(buffer, offset, elements);
 }
 
-export default function struct(buffer, my_def, offset) {
+export function struct(buffer, my_def, offset) {
 	let dv = new DataView(buffer);
 	let out = {};
 	

@@ -16,7 +16,7 @@ ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-import State from "./state";
+import { struct } from "./state";
 import Audio from "./audio";
 
 import AssemblyCore from '../../../assets/libminimon.wasm';
@@ -36,20 +36,31 @@ const INPUT_CART_N = 0b1000000000;
 const CPU_FREQ = 4000000;
 
 export default class Minimon {
-	private constructor(name) {
-		this._name = name;
-		this._inputState = 0b1111111111; // No cartridge inserted, no IRQ
-		this._audio = new Audio();
-		this.breakpoints = [];
+	public state:State;
+	private audio:Audio;
 
-		document.body.addEventListener('keydown', (e) => {
-			this._inputState &= ~KEYBOARD_CODES[e.keyCode];
-			this._updateinput();
+	private cpu_state:number;
+	private machineBytes:Uint8Array;
+	private exports;
+	private runTimer;
+	private breakpoints:Array<number>;
+
+	private inputState:number;
+
+	private constructor() {
+		this.inputState = 0b1111111111; // No cartridge inserted, no IRQ
+		this.audio = new Audio();
+		this.breakpoints = [];
+		this.runTimer = null;
+
+		document.body.addEventListener('keydown', (e:KeyboardEvent) => {
+			this.inputState &= ~KEYBOARD_CODES[e.keyCode];
+			this.updateInput();
 		});
 
-		document.body.addEventListener('keyup', (e) => {
-			this._inputState |= KEYBOARD_CODES[e.keyCode];
-			this._updateinput();
+		document.body.addEventListener('keyup', (e:KeyboardEvent) => {
+			this.inputState |= KEYBOARD_CODES[e.keyCode];
+			this.updateInput();
 		});
 	}
 
@@ -58,12 +69,13 @@ export default class Minimon {
 
 		const request = await fetch(AssemblyCore);
 		const wasm = await WebAssembly.instantiate(await request.arrayBuffer(), { env: inst._wasm_environment });
-		inst._exports = wasm.instance.exports;
 
-		inst._cpu_state = inst._exports.get_machine();
-		inst._machineBytes = new Uint8Array(inst._exports.memory.buffer);
-		inst.state = new State(inst._exports.memory.buffer, inst._exports.get_description(), inst._cpu_state);
-		inst._exports.set_sample_rate(inst._cpu_state, inst._audio.sampleRate);
+		inst.exports = wasm.instance.exports;
+		inst.cpu_state = inst.exports.get_machine();
+		inst.machineBytes = new Uint8Array(inst.exports.memory.buffer);
+		inst.exports.set_sample_rate(inst.cpu_state, inst.audio.sampleRate);
+
+		inst.state = struct(inst.exports.memory.buffer, inst.exports.get_description(), inst.cpu_state);
 
 		inst.reset();
 
@@ -71,39 +83,38 @@ export default class Minimon {
 	}
 
 	_wasm_environment = {
-		audio_push: (address, frames) => {
-			let samples = new Float32Array(this._exports.memory.buffer, address, frames);
-			this._audio.push(samples);
+		audio_push: (address:number, frames: number) => {
+			let samples = new Float32Array(this.exports.memory.buffer, address, frames);
+			this.audio.push(samples);
 		},
 
-		flip_screen: (address) => {
-			this.repaint(this._machineBytes, address);
+		flip_screen: (address:number) => {
+			this.repaint(this.machineBytes, address);
 		},
 
-		debug_print: (a) => {
+		debug_print: (a:number) => {
 			const str = [];
 			let ch;
-			while (ch = this._machineBytes[a++]) str.push(String.fromCharCode(ch));
+			while (ch = this.machineBytes[a++]) str.push(String.fromCharCode(ch));
 
 			console.log(str.join(""));
 		},
 
-		trace_access: (cpu, address, kind, data) => {
-			
+		trace_access: (cpu:number, address:number, kind:number, data:number) => {
 		}
 	}
 
 	get running() {
-		return this._running;
+		return this.runTimer !== null;
 	}
 
 	set running(v) {
-		if (this._running == v) return ;
+		if (this.running == v) return ;
 
 		let time = Date.now();
 
 		const _tick = () => {
-			if (!this._running) return ;
+			if (!this.running) return ;
 
 			let now = Date.now();
 			let delta = Math.floor(Math.min(200, now - time) * CPU_FREQ / 1000);
@@ -119,27 +130,25 @@ export default class Minimon {
 						break ;
 					}
 
-					this._exports.cpu_step(this._cpu_state);
+					this.exports.cpu_step(this.cpu_state);
 				}
 			} else {
-				this._exports.cpu_advance(this._cpu_state, delta);
+				this.exports.cpu_advance(this.cpu_state, delta);
 			}
 			this.update();
 		}
 
-		this._running = v;
-
 		if (v) {
-			this._timer = setInterval(_tick, 0);
+			this.runTimer = setInterval(_tick, 0);
 		} else {
-			clearInterval(this._timer);
+			clearInterval(this.runTimer);
 		}
 		
 		this.update();
 	}
 
 	// Trigger an update to the UI
-	repaint() {
+	repaint(bytes:Uint8Array, address:number) {
 
 	}
 
@@ -147,8 +156,8 @@ export default class Minimon {
 		// This will be overidden elsewhere
 	}
 
-	_updateinput(v) {
-		this._exports.update_inputs(this._cpu_state, this._inputState);
+	private updateInput() {
+		this.exports.update_inputs(this.cpu_state, this.inputState);
 	}
 
 	// Cartridge I/O
@@ -160,16 +169,16 @@ export default class Minimon {
 
 		setTimeout(() => {
 			for (let i = bytes.length - 1; i >= 0; i--) this.state.cartridge[(i+offset) & 0x1FFFFF] = bytes[i];
-			this._inputState &= ~INPUT_CART_N;
-			this._updateinput();
+			this.inputState &= ~INPUT_CART_N;
+			this.updateInput();
 		}, 100);
 
 		this.eject();
 	}
 
 	eject() {
-		this._inputState |= INPUT_CART_N;
-		this._updateinput();
+		this.inputState |= INPUT_CART_N;
+		this.updateInput();
 	}
 
 	// WASM shim functions
@@ -182,21 +191,21 @@ export default class Minimon {
 	}
 
 	step() {
-		this._exports.cpu_step(this._cpu_state);
+		this.exports.cpu_step(this.cpu_state);
 		this.update();
 	}
 
 	reset() {
-		this._exports.cpu_reset(this._cpu_state);
-		this._updateinput();
+		this.exports.cpu_reset(this.cpu_state);
+		this.updateInput();
 		this.update();
 	}
 
 	read(address) {
-		return this._exports.cpu_read(this._cpu_state, address);
+		return this.exports.cpu_read(this.cpu_state, address);
 	}
 
 	write(data, address) {
-		return this._exports.cpu_write(this._cpu_state, data, address);
+		return this.exports.cpu_write(this.cpu_state, data, address);
 	}
 }
