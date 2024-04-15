@@ -3,7 +3,6 @@ all: wasm
 clean:
 	rm -Rf include/table.h instructions.ts
 	make -C wasm clean
-	make -C libretro clean
 
 wasm: table.h instructions.ts
 	make -C wasm
