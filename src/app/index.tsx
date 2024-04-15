@@ -12,7 +12,6 @@ import SystemContext from "./context";
 
 export async function getApp() {
   const system = await Minimon.getMinimon();
-  system.running = true;
 
   const defaultLayout:LayoutData = {
     dockbox: {
@@ -20,7 +19,7 @@ export async function getApp() {
       children: [
         {
           tabs: [
-            { id: 'screen', title: 'Screen', content: <Screen /> },
+            { id: 'system', title: 'System', content: <Screen /> },
             { id: 'registers', title: "Registers", content: <div></div> }
           ]
         }
