@@ -32,10 +32,13 @@ export default class Screen extends Component {
 	static contextType = SystemContext;
 
   private context:Minimon;
-  private _ctx:WebGL2RenderingContext | null;
+  private ref:React.RefObject<HTMLCanvasElement>;
+  private _ctx:WebGL2RenderingContext | null | undefined;
   private _vram:WebGLTexture | null;
   private _copyBuffer:WebGLBuffer | null;
-  private _shader:WebGLProgram | null;
+  private program:WebGLProgram | null;
+  private attributes;
+  private uniforms;
 
   private contrast:number;
   private animID:number;
@@ -43,18 +46,20 @@ export default class Screen extends Component {
   constructor(props) {
 		super(props);
 
-		this._ref = createRef();
+		this.ref = createRef();
     this._ctx = null;
     this._vram = null;
     this._copyBuffer = null;
-    this._shader = null;
+    this.attributes = {};
+    this.uniforms = {};
+    this.program = null;
     this.animID = 0;
 
-    this.constrast = 0.5;
+    this.contrast = 0.5;
 	}
 
 	componentDidMount() {
-    this._ctx = this._ref.current.getContext("webgl2", {
+    this._ctx = this.ref.current?.getContext("webgl2", {
       preserveDrawingBuffer: true,
       alpha: false
     });
@@ -126,37 +131,31 @@ export default class Screen extends Component {
 			return null;
 		}
 
-		let shaderProgram = gl.createProgram();
-		gl.attachShader(shaderProgram, vertexShader);
-		gl.attachShader(shaderProgram, fragmentShader);
-		gl.linkProgram(shaderProgram);
+		this.program = gl.createProgram();
+		gl.attachShader(this.program, vertexShader);
+		gl.attachShader(this.program, fragmentShader);
+		gl.linkProgram(this.program);
 
-		if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+		if (!gl.getProgramParameter(this.program, gl.LINK_STATUS)) {
 			console.error(gl.getError());
 			return null;
 		}
 
-		const attrCount = gl.getProgramParameter(shaderProgram, gl.ACTIVE_ATTRIBUTES);
-		const attributes = {};
+		const attrCount = gl.getProgramParameter(this.program, gl.ACTIVE_ATTRIBUTES);
+		this.attributes = {};
 
 		for (var i = 0; i < attrCount; i++) {
-			const attr = gl.getActiveAttrib(shaderProgram, i);
-			attributes[attr.name] = i;
+			const attr = gl.getActiveAttrib(this.program, i);
+			this.attributes[attr.name] = i;
 		}
 
-		const uniCount= gl.getProgramParameter(shaderProgram, gl.ACTIVE_UNIFORMS);
-		const uniforms = {};
+		const uniCount= gl.getProgramParameter(this.program, gl.ACTIVE_UNIFORMS);
+		this.uniforms = {};
 
 		for (var i = 0; i < uniCount; i++) {
-			const uni = gl.getActiveUniform(shaderProgram, i);
-			uniforms[uni.name] = gl.getUniformLocation(shaderProgram, uni.name);
+			const uni = gl.getActiveUniform(this.program, i);
+			this.uniforms[uni.name] = gl.getUniformLocation(this.program, uni.name);
 		}
-
-		this._shader =  {
-			attributes: attributes,
-			uniforms: uniforms,
-			program: shaderProgram
-		};
 
 		this._copyBuffer = gl.createBuffer();
 		gl.bindBuffer(gl.ARRAY_BUFFER, this._copyBuffer);
@@ -182,7 +181,6 @@ export default class Screen extends Component {
 
     this.contrast = constrast / 0x3F;
 
-    crypto.getRandomValues(memory);
     gl.bindTexture(gl.TEXTURE_2D, this._vram);
     gl.texSubImage2D(
       gl.TEXTURE_2D, 0,
@@ -193,12 +191,12 @@ export default class Screen extends Component {
 
   private const redraw = () => {
     const gl = this._ctx;
-    const width = this._ref.current.clientWidth;
-    const height = this._ref.current.clientHeight;
+    const width = this.ref.current.clientWidth;
+    const height = this.ref.current.clientHeight;
 
-    if (width != this._ref.current.width || height != this._ref.current.height) {
-      this._ref.current.width = width;
-      this._ref.current.height = height;
+    if (width != this.ref.current.width || height != this.ref.current.height) {
+      this.ref.current.width = width;
+      this.ref.current.height = height;
 
       if (width * 2 / 3 > height) {
         let fit_x = Math.floor(height * 3 / 2);
@@ -208,22 +206,21 @@ export default class Screen extends Component {
         gl.viewport(0, (height - fit_y) / 2, width, fit_y);
       }
 
-
       gl.clear(gl.COLOR_BUFFER_BIT);
     }
 
-    gl.useProgram(this._shader.program);
+    gl.useProgram(this.program);
 
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, this._vram);
 
-    gl.uniform1f(this._shader.uniforms.contrast, this.contrast);
+    gl.uniform1f(this.uniforms.contrast, this.contrast);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, this._copyBuffer);
-    gl.enableVertexAttribArray(this._shader.attributes.position);
-    gl.enableVertexAttribArray(this._shader.attributes.uv);
-    gl.vertexAttribPointer(this._shader.attributes.position, 2, gl.FLOAT, false, 16, 0);
-    gl.vertexAttribPointer(this._shader.attributes.uv, 2, gl.FLOAT, false, 16, 8);
+    gl.enableVertexAttribArray(this.attributes.position);
+    gl.enableVertexAttribArray(this.attributes.uv);
+    gl.vertexAttribPointer(this.attributes.position, 2, gl.FLOAT, false, 16, 0);
+    gl.vertexAttribPointer(this.attributes.uv, 2, gl.FLOAT, false, 16, 8);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
     this.animID = requestAnimationFrame(this.redraw);
@@ -235,7 +232,7 @@ export default class Screen extends Component {
 				onDragLeave={(e) => this.onDragLeave(e)}
 				onDrop={(e) => this.onDrop(e)}
 				className="screen">
-				<canvas ref={this._ref} />
+				<canvas ref={this.ref} />
 			</div>
 		);
 	}
