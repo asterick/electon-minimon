@@ -19,16 +19,23 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 const BUFFER_LENGTH = 1024; // This is the size of an audio clip push
 
 export default class Audio {
-	constructor() {
+    private context:AudioContext;
+    private node:ScriptProcessorNode;
+    private buffer:Float32Array;
+    private writeIndex:number;
+    private readIndex:number;
+    private sample:number;
+
+    constructor() {
 		this.context = new AudioContext();
 
         this.node = this.context.createScriptProcessor(BUFFER_LENGTH, 1, 1);
         this.node.onaudioprocess = this.process.bind(this);
 
-        this._buffer = new Float32Array(BUFFER_LENGTH * 4);
-        this._writeIndex = 0;
-        this._readIndex = 0;
-        this._sample = 0.0;
+        this.buffer = new Float32Array(BUFFER_LENGTH * 4);
+        this.writeIndex = 0;
+        this.readIndex = 0;
+        this.sample = 0.0;
 
 		this.node.connect(this.context.destination);
 	}
@@ -39,8 +46,8 @@ export default class Audio {
 
     push(f) {
         for (let i = 0; i < f.length; i++) {
-            this._buffer[this._writeIndex++] = f[i];
-            if (this._writeIndex >= this._buffer.length) this._writeIndex = 0;
+            this.buffer[this.writeIndex++] = f[i];
+            if (this.writeIndex >= this.buffer.length) this.writeIndex = 0;
         }
     }
 
@@ -49,13 +56,13 @@ export default class Audio {
             length = audio.length;
 
         for(let i = 0; i < length; i++) {
-            if (this._readIndex != this._writeIndex) {
-                this._sample = this._buffer[this._readIndex++] * 0.1;
-                if (this._readIndex >= this._buffer.length) this._readIndex = 0;
+            if (this.readIndex != this.writeIndex) {
+                this.sample = this.buffer[this.readIndex++] * 0.1;
+                if (this.readIndex >= this.buffer.length) this.readIndex = 0;
             } else { 
-                this._sample *= 0.95;
+                this.sample *= 0.95;
             }
-            audio[i] = this._sample;
+            audio[i] = this.sample;
         }
     }
 }
