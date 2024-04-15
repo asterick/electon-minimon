@@ -127,6 +127,7 @@ export default class Minimon {
 		} else {
 			this.exports.cpu_advance(this.cpu_state, delta);
 		}
+
 		this.update();
 	}
 
@@ -172,13 +173,12 @@ export default class Minimon {
     this.repaint(this.state.buffers.framebuffer, contrast);
 	}
 
-	debug_print = (a:number) => {
+	debug_print = (start:number) => {
 		let utf8decoder = new TextDecoder();
-		let e = a;
+		let end = this.machineBytes?.indexOf(0, start);
 
-		while(e < this.machineBytes.length && this.machineBytes[e++]) ;
-
-		return utf8decoder.decode(new Uint8Array(this.machineBytes, a, e - a));
+		const string = utf8decoder.decode(new Uint8Array(this.machineBytes.buffer, start, end - start));
+    console.log(string);
 	}
 
 	trace_access = (cpu:number, address:number, kind:number, data:number) => {

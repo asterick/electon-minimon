@@ -33,9 +33,9 @@ export default class Screen extends Component {
 
   private context:Minimon;
   private ref:React.RefObject<HTMLCanvasElement>;
-  private _ctx:WebGL2RenderingContext | null | undefined;
-  private _vram:WebGLTexture | null;
-  private _copyBuffer:WebGLBuffer | null;
+  private ctx:WebGL2RenderingContext | null | undefined;
+  private tex:WebGLTexture | null;
+  private verts:WebGLBuffer | null;
   private program:WebGLProgram | null;
   private attributes;
   private uniforms;
@@ -47,9 +47,9 @@ export default class Screen extends Component {
 		super(props);
 
 		this.ref = createRef();
-    this._ctx = null;
-    this._vram = null;
-    this._copyBuffer = null;
+    this.ctx = null;
+    this.tex = null;
+    this.verts = null;
     this.attributes = {};
     this.uniforms = {};
     this.program = null;
@@ -59,7 +59,7 @@ export default class Screen extends Component {
 	}
 
 	componentDidMount() {
-    this._ctx = this.ref.current?.getContext("webgl2", {
+    this.ctx = this.ref.current?.getContext("webgl2", {
       preserveDrawingBuffer: true,
       alpha: false
     });
@@ -71,7 +71,7 @@ export default class Screen extends Component {
 
 	componentWillUnmount() {
 		cancelAnimationFrame(this.animID);
-		this._ctx = null;
+		this.ctx = null;
     this.animID = 0;
 
 		delete this.context.repaint;
@@ -99,7 +99,9 @@ export default class Screen extends Component {
   }
 
 	init() {
-		const gl = this._ctx;
+		const gl = this.ctx;
+
+    if (!gl) return ;
 
 		gl.disable(gl.STENCIL_TEST);
 		gl.disable(gl.DEPTH_TEST);
@@ -112,9 +114,7 @@ export default class Screen extends Component {
 		gl.clearColor(0xB7 / 255, 0xCA / 255, 0xB7 / 255, 1.0);
 		gl.clear(gl.COLOR_BUFFER_BIT);
 
-		var fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
 		var vertexShader =  gl.createShader(gl.VERTEX_SHADER);
-
 		gl.shaderSource(vertexShader, VertexShader);
 		gl.compileShader(vertexShader);
 
@@ -123,6 +123,7 @@ export default class Screen extends Component {
 			return null;
 		}
 
+		var fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
 		gl.shaderSource(fragmentShader, FragmentShader);
 		gl.compileShader(fragmentShader);
 
@@ -157,8 +158,8 @@ export default class Screen extends Component {
 			this.uniforms[uni.name] = gl.getUniformLocation(this.program, uni.name);
 		}
 
-		this._copyBuffer = gl.createBuffer();
-		gl.bindBuffer(gl.ARRAY_BUFFER, this._copyBuffer);
+		this.verts = gl.createBuffer();
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.verts);
 		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
        1,-1, VRAM_WIDTH, VRAM_HEIGHT,
        1, 1, VRAM_WIDTH,           0,
@@ -166,31 +167,28 @@ export default class Screen extends Component {
       -1, 1,          0,           0
     ]), gl.STATIC_DRAW);
 
-		this._vram = gl.createTexture();
+		this.tex = gl.createTexture();
 
-		gl.bindTexture(gl.TEXTURE_2D, this._vram);
+		gl.bindTexture(gl.TEXTURE_2D, this.tex);
 		gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, 128, 64, 0, gl.RED, gl.UNSIGNED_BYTE, new Uint8Array(0x2000));
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 	}
 
-	private const updateTexture = (memory:Uint8Array, constrast:number) => {
-    const gl = this._ctx;
+	private updateTexture = (memory:Uint8Array, constrast:number) => {
+    const gl = this.ctx;
 
     if (!gl) return ;
 
     this.contrast = constrast / 0x3F;
 
-    gl.bindTexture(gl.TEXTURE_2D, this._vram);
+    gl.bindTexture(gl.TEXTURE_2D, this.tex);
     gl.texSubImage2D(
-      gl.TEXTURE_2D, 0,
-      0, 0, VRAM_WIDTH, VRAM_HEIGHT,
-      gl.RED, gl.UNSIGNED_BYTE,
-      memory);
+      gl.TEXTURE_2D, 0, 0, 0, VRAM_WIDTH, VRAM_HEIGHT, gl.RED, gl.UNSIGNED_BYTE, memory);
   }
 
-  private const redraw = () => {
-    const gl = this._ctx;
+  private redraw = () => {
+    const gl = this.ctx;
     const width = this.ref.current.clientWidth;
     const height = this.ref.current.clientHeight;
 
@@ -212,11 +210,11 @@ export default class Screen extends Component {
     gl.useProgram(this.program);
 
     gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, this._vram);
+    gl.bindTexture(gl.TEXTURE_2D, this.tex);
 
     gl.uniform1f(this.uniforms.contrast, this.contrast);
 
-    gl.bindBuffer(gl.ARRAY_BUFFER, this._copyBuffer);
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.verts);
     gl.enableVertexAttribArray(this.attributes.position);
     gl.enableVertexAttribArray(this.attributes.uv);
     gl.vertexAttribPointer(this.attributes.position, 2, gl.FLOAT, false, 16, 0);
