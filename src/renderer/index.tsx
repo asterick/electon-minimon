@@ -1,5 +1,5 @@
 import { createRoot } from 'react-dom/client';
-import { getApp } from '../ui';
+import { getApp } from '../app';
 
 async function main() {
   const container = document.getElementById('root') as HTMLElement;
