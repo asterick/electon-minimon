@@ -18,51 +18,42 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 const BUFFER_LENGTH = 1024; // This is the size of an audio clip push
 
+const audioContext = new AudioContext();
+const workletPromise = audioContext.audioWorklet.addModule(new URL('./audio.worklet.js', import.meta.url))
+
 export default class Audio {
-    private context:AudioContext;
-    private node:ScriptProcessorNode;
+    private node:AudioWorkletNode;
     private buffer:Float32Array;
     private writeIndex:number;
-    private readIndex:number;
     private sample:number;
 
     constructor() {
-		this.context = new AudioContext();
-
-        this.node = this.context.createScriptProcessor(BUFFER_LENGTH, 1, 1);
-        this.node.onaudioprocess = this.process.bind(this);
-
         this.buffer = new Float32Array(BUFFER_LENGTH * 4);
         this.writeIndex = 0;
-        this.readIndex = 0;
         this.sample = 0.0;
 
-		this.node.connect(this.context.destination);
-	}
+        workletPromise.then(() => {
+            this.node = new AudioWorkletNode(
+                audioContext,
+                "stream-audio-processor",
+            );
+    
+            this.node.connect(audioContext.destination);
+        })
+    }
 
     get sampleRate() {
-        return this.context.sampleRate;
+        return audioContext.sampleRate;
     }
 
     push(f) {
         for (let i = 0; i < f.length; i++) {
             this.buffer[this.writeIndex++] = f[i];
-            if (this.writeIndex >= this.buffer.length) this.writeIndex = 0;
-        }
-    }
-
-    process(e) {
-        var audio = e.outputBuffer.getChannelData(0),
-            length = audio.length;
-
-        for(let i = 0; i < length; i++) {
-            if (this.readIndex != this.writeIndex) {
-                this.sample = this.buffer[this.readIndex++] * 0.1;
-                if (this.readIndex >= this.buffer.length) this.readIndex = 0;
-            } else { 
-                this.sample *= 0.95;
-            }
-            audio[i] = this.sample;
+            
+            if (this.writeIndex >= this.buffer.length) {
+                // Send samples to the worklet
+                this.writeIndex = 0;
+            }            
         }
     }
 }

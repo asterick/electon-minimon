@@ -36,15 +36,11 @@ const INPUT_CART_N = 0b1000000000;
 const CPU_FREQ = 4000000;
 
 export default class Minimon {
-	constructor(name) {
+	private constructor(name) {
 		this._name = name;
 		this._inputState = 0b1111111111; // No cartridge inserted, no IRQ
 		this._audio = new Audio();
 		this.breakpoints = [];
-
-		window.addEventListener("beforeunload", (e) => {
-			this.preserve();
-		}, false);
 
 		document.body.addEventListener('keydown', (e) => {
 			this._inputState &= ~KEYBOARD_CODES[e.keyCode];
@@ -57,81 +53,43 @@ export default class Minimon {
 		});
 	}
 
-	preserve() {
-		if (!this.state) return ;
-
-		let { prescale, running, value } = this.state.rtc;
-		let encoded = "";
-		for (let i = 0; i < this.state.gpio.eeprom.data.length; i++) {
-			encoded += String.fromCharCode(this.state.gpio.eeprom.data[i]);
-		}
-
-		window.localStorage.setItem(`${this._name}-eeprom`, encoded);
-		window.localStorage.setItem(`${this._name}-rtc`, JSON.stringify({ prescale, running, value, timestamp: +Date.now()}));
-	}
-
-	restore() {
-		if (!this.state) return ;
-
-		try {
-			let encoded = window.localStorage.getItem(`${this._name}-eeprom`);
-
-			for (let i = 0; i < encoded.length; i++) {
-				this.state.gpio.eeprom.data[i] = encoded.charCodeAt(i);
-			}
-
-			// Restore clock (if set)
-			let rtc = JSON.parse(window.localStorage.getItem(`${this._name}-rtc`));
-			let sec = Math.floor((+Date.now() - rtc.timestamp) / 1000)
-
-			this.state.rtc.running = rtc.running;
-			this.state.rtc.prescale = rtc.prescale;
-			this.state.rtc.value = rtc.value + sec;
-
-		} catch (e) {
-			console.log("Could not restore system state")
-		}
-	}
-
-	async init() {
-		this.preserve();
+	public static async getMinimon() {
+		const inst = new Minimon();
 
 		const request = await fetch(AssemblyCore);
-		const wasm = await WebAssembly.instantiate(await request.arrayBuffer(), this._wasm_environment);
-		this._exports = wasm.instance.exports;
+		const wasm = await WebAssembly.instantiate(await request.arrayBuffer(), { env: inst._wasm_environment });
+		inst._exports = wasm.instance.exports;
 
-		this._cpu_state = this._exports.get_machine();
-		this._machineBytes = new Uint8Array(this._exports.memory.buffer);
-		this.state = new State(this._exports.memory.buffer, this._exports.get_description(), this._cpu_state);
+		inst._cpu_state = inst._exports.get_machine();
+		inst._machineBytes = new Uint8Array(inst._exports.memory.buffer);
+		inst.state = new State(inst._exports.memory.buffer, inst._exports.get_description(), inst._cpu_state);
+		inst._exports.set_sample_rate(inst._cpu_state, inst._audio.sampleRate);
 
-		
-		this._exports.set_sample_rate(this._cpu_state, this._audio.sampleRate);
-		this.reset();
-		this.restore();
+		inst.reset();
+
+		return inst;
 	}
 
 	_wasm_environment = {
-		env: {
-			audio_push: (address, frames) => {
-				let samples = new Float32Array(this._exports.memory.buffer, address, frames);
-				this._audio.push(samples);
-			},
+		audio_push: (address, frames) => {
+			let samples = new Float32Array(this._exports.memory.buffer, address, frames);
+			this._audio.push(samples);
+		},
 
-			flip_screen: (address) => {
-				this.repaint(this._machineBytes, address);
-			},
+		flip_screen: (address) => {
+			this.repaint(this._machineBytes, address);
+		},
 
-			debug_print: (a) => {
-				const str = [];
-				let ch;
-				while (ch = this._machineBytes[a++]) str.push(String.fromCharCode(ch));
+		debug_print: (a) => {
+			const str = [];
+			let ch;
+			while (ch = this._machineBytes[a++]) str.push(String.fromCharCode(ch));
 
-				console.log(str.join(""));
-			},
+			console.log(str.join(""));
+		},
 
-			trace_access: (cpu, address, kind, data) => {
-				
-			}
+		trace_access: (cpu, address, kind, data) => {
+			
 		}
 	}
 

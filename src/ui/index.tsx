@@ -10,25 +10,23 @@ import Screen from "./screen";
 
 import SystemContext from "./context";
 
-const system = new Minimon("default");
-
-const defaultLayout:LayoutData = {
-  dockbox: {
-    mode: 'horizontal',
-    children: [
-      {
-        tabs: [
-          { id: 'screen', title: 'Screen', content: <Screen /> }
-        ]
-      }
-    ]
-  }
-};
-
 export async function getApp() {
-  await system.init();
+  const system = await Minimon.getMinimon();
   system.running = true;
 
+  const defaultLayout:LayoutData = {
+    dockbox: {
+      mode: 'horizontal',
+      children: [
+        {
+          tabs: [
+            { id: 'screen', title: 'Screen', content: <Screen /> }
+          ]
+        }
+      ]
+    }
+  };
+  
   return (
     <SystemContext.Provider value={system}>
       <DockLayout

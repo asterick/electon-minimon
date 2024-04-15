@@ -16,7 +16,7 @@ ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-import * as Table from "./table.ts";
+import * as Table from "../../../core/instructions";
 
 function toHex(v, c) {
 	v = v.toString(16).toUpperCase();
