@@ -25,6 +25,8 @@ import SystemContext from "../context";
 import VertexShader from "./shaders/vertex.glsl";
 import FragmentShader from "./shaders/fragment.glsl";
 
+import { ButtonGroup, Button } from "@blueprintjs/core";
+
 const VRAM_WIDTH  = 96;
 const VRAM_HEIGHT = 64;
 
@@ -226,12 +228,21 @@ export default class Screen extends Component {
 
 	render() {
 		return (
-			<div onDragOver={(e) => this.onDragOver(e)}
-				onDragLeave={(e) => this.onDragLeave(e)}
-				onDrop={(e) => this.onDrop(e)}
-				className="screen">
-				<canvas ref={this.ref} />
-			</div>
+			<div className="system">
+        <div className="toolbar">
+        <ButtonGroup fill={true} minimal={false}>
+            <Button icon={this.context.running ? "stop" : "play"} onClick={(e) => this.context.running = !this.context.running}/>
+            <Button icon="reset" onClick={(e) => this.context.reset()} />
+            <Button icon="step-forward" fill={true} onClick={(e) => this.context.step()} />
+          </ButtonGroup>
+        </div>
+        <div className="screen"
+          onDragOver={(e) => this.onDragOver(e)}
+          onDragLeave={(e) => this.onDragLeave(e)}
+          onDrop={(e) => this.onDrop(e)}>
+          <canvas ref={this.ref}/>
+        </div>
+      </div>
 		);
 	}
 }

@@ -2,6 +2,7 @@ import "normalize.css/normalize.css";
 import "rc-dock/dist/rc-dock.css";
 import "@blueprintjs/core/lib/css/blueprint.css";
 import "@blueprintjs/icons/lib/css/blueprint-icons.css";
+import "./style.css";
 
 import { DockLayout, LayoutData } from 'rc-dock'
 
