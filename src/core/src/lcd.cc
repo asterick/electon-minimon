@@ -131,7 +131,8 @@ void LCD::write(LCD::State &lcd, uint8_t data, uint32_t address)
   {
     switch (data)
     {
-    case 0b10101110 ... 0b10101111:
+    case 0b10101110:
+    case 0b10101111:
       lcd.display_enable = data & 1;
       break;
 

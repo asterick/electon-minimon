@@ -20,42 +20,51 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 #include <stdint.h>
 
-namespace Machine { struct State; };
+namespace Machine
+{
+  struct State;
+};
 
-namespace Blitter {
-	struct Overlay {
-		uint8_t	framebuffer[8][96];
-		uint8_t	oam[24][4];
-		uint8_t map[384];
-	};
+namespace Blitter
+{
+  struct Overlay
+  {
+    uint8_t framebuffer[8][96];
+    uint8_t oam[24][4];
+    uint8_t map[384];
+  };
 
-	struct State {
-		bool invert_map;
-		bool enable_map;
-		bool enable_sprites;
-		bool enable_copy;
-		uint8_t map_size;
-		uint8_t frame_divider;
-		uint8_t frame_count;
+  struct State
+  {
+    bool lcd_init;
+    bool invert_map;
+    bool enable_map;
+    bool enable_sprites;
+    bool enable_copy;
+    uint8_t map_size;
+    uint8_t frame_divider;
+    uint8_t frame_count;
 
-		union {
-			unsigned int map_base;
-			uint8_t map_bytes[3];
-		};
-		union {
-			unsigned int sprite_base;
-			uint8_t sprite_bytes[3];
-		};
+    union
+    {
+      unsigned int map_base;
+      uint8_t map_bytes[3];
+    };
+    union
+    {
+      unsigned int sprite_base;
+      uint8_t sprite_bytes[3];
+    };
 
-		uint8_t scroll_x;
-		uint8_t scroll_y;
+    uint8_t scroll_x;
+    uint8_t scroll_y;
 
-		// Counters
-		uint8_t divider;
-	};
+    // Counters
+    uint8_t divider;
+  };
 
-	void reset(Machine::State& cpu);
-	void clock(Machine::State& cpu);
-	uint8_t read(Machine::State& cpu, uint32_t address);
-	void write(Machine::State& cpu, uint8_t data, uint32_t address);
+  void reset(Machine::State &cpu);
+  void clock(Machine::State &cpu);
+  uint8_t read(Machine::State &cpu, uint32_t address);
+  void write(Machine::State &cpu, uint8_t data, uint32_t address);
 }

@@ -278,13 +278,13 @@ static TraceType operator|(TraceType A, TraceType B)
 uint8_t cpu_read8(Machine::State &cpu, uint32_t address, TraceType access)
 {
   cpu.bus_cap = cpu_read(cpu, address);
-  trace_access(cpu, address, access | TRACE_READ, cpu.bus_cap);
+  trace_access(cpu, address, access | TRACE_READ);
   return cpu.bus_cap;
 }
 
 void cpu_write8(Machine::State &cpu, uint8_t data, uint32_t address, TraceType access)
 {
-  trace_access(cpu, address, access | TRACE_WRITE, cpu.bus_cap);
+  trace_access(cpu, address, access | TRACE_WRITE);
   cpu_write(cpu, cpu.bus_cap = data, address);
 }
 

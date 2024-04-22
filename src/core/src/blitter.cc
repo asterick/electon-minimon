@@ -246,7 +246,7 @@ uint8_t Blitter::read(Machine::State &cpu, uint32_t address)
   case 0x2080:
     return 0 | (cpu.blitter.invert_map ? 0b0001 : 0) | (cpu.blitter.enable_map ? 0b0010 : 0) | (cpu.blitter.enable_sprites ? 0b0100 : 0) | (cpu.blitter.enable_copy ? 0b1000 : 0) | (cpu.blitter.map_size << 4);
   case 0x2081:
-    return cpu.blitter.frame_divider | (cpu.blitter.frame_count << 4);
+    return (cpu.blitter.frame_divider << 1) | (cpu.blitter.frame_count << 4) | (cpu.blitter.lcd_init ? 1 : 0);
   case 0x2085:
     return cpu.blitter.scroll_y;
   case 0x2086:
@@ -278,6 +278,7 @@ void Blitter::write(Machine::State &cpu, uint8_t data, uint32_t address)
     cpu.blitter.map_size = (data >> 4) & 0b11;
     break;
   case 0x2081:
+    cpu.blitter.lcd_init = (data & 1) != 0;
     cpu.blitter.frame_divider = (data >> 1) & 0b111;
     break;
   case 0x2082 ... 0x2084:
