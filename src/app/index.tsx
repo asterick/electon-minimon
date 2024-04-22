@@ -30,6 +30,7 @@ export async function getApp() {
 
   return (
     <SystemContext.Provider value={system}>
+      <div className="pt-dark">
       <DockLayout
         defaultLayout={defaultLayout}
         style={{
@@ -40,6 +41,7 @@ export async function getApp() {
           bottom: 0,
         }}
         />
+        </div>
     </SystemContext.Provider>
   );
 }

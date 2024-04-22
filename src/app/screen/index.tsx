@@ -230,10 +230,11 @@ export default class Screen extends Component {
 		return (
 			<div className="system">
         <div className="toolbar">
-        <ButtonGroup fill={true} minimal={false}>
-            <Button icon={this.context.running ? "stop" : "play"} onClick={(e) => this.context.running = !this.context.running}/>
-            <Button icon="reset" onClick={(e) => this.context.reset()} />
-            <Button icon="step-forward" fill={true} onClick={(e) => this.context.step()} />
+        <ButtonGroup fill={true}>
+            <Button icon={this.context.running ? "stop" : "play"} onClick={(e) => this.context.running = !this.context.running}>{this.context.running ? "Stop" : "Play"}</Button>
+            <Button icon="reset" onClick={(e) => this.context.reset()}>Reset</Button>
+            <Button icon="step-forward" onClick={(e) => this.context.step()}>Step</Button>
+            <Button fill={true} disabled={true} />
           </ButtonGroup>
         </div>
         <div className="screen"
