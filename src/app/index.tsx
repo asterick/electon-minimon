@@ -8,6 +8,7 @@ import { DockLayout, LayoutData } from 'rc-dock'
 
 import Minimon from "./system";
 import Screen from "./screen";
+import Settings from "./settings";
 
 import SystemContext from "./context";
 
@@ -20,7 +21,8 @@ export async function getApp() {
       children: [
         {
           tabs: [
-            { id: 'system', title: 'System', content: <Screen /> },
+            { id: 'system', title: "System", content: <Screen /> },
+            { id: 'settings', title: "Settings", content: <Settings /> },
             { id: 'registers', title: "Registers", content: <div></div> }
           ]
         }
