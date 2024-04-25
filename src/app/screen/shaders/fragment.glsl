@@ -3,6 +3,7 @@
 precision mediump float;
 
 uniform mediump sampler2D vram;
+uniform mediump sampler2D palette;
 uniform float contrast;
 
 in vec2 texpos;

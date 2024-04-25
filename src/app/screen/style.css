@@ -7,7 +7,7 @@
 
 .system .toolbar {
   flex: 0 0 auto;
-  padding: 4px 4px 6px;
+  margin: -4px -10px 0;
 }
 
 .system .screen {

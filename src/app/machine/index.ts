@@ -35,7 +35,7 @@ const KEYBOARD_CODES = {
 const INPUT_CART_N = 0b1000000000;
 const CPU_FREQ = 4000000;
 
-export default class Minimon {
+export default class Minimon extends EventTarget {
 	public state:Object | null;
 	private audio:Audio;
 
@@ -49,6 +49,8 @@ export default class Minimon {
 	private inputState:number;
 
 	private constructor() {
+    super();
+
 		this.cpu_state = 0;
 		this.inputState = 0b1111111111;
 		this.audio = new Audio();
@@ -94,6 +96,8 @@ export default class Minimon {
 	set running(v) {
 		if (this.running == v) return ;
 
+    this.dispatchEvent(new CustomEvent("state:running", { detail: v }));
+
 		if (v) {
 			this.systemTime = Date.now();
 			this.runTimer = setInterval(this.tick, 0);
@@ -131,13 +135,8 @@ export default class Minimon {
 		this.update();
 	}
 
-	// Trigger an update to the UI
-	repaint(bytes:Uint8Array, address:number) {
-
-	}
-
 	update() {
-		// This will be overidden elsewhere
+		this.dispatchEvent(new CustomEvent("state", { details: this.state }))
 	}
 
 	private updateInput() {
@@ -170,7 +169,12 @@ export default class Minimon {
 	}
 
 	flip_screen = (contrast:number) => {
-    this.repaint(this.state.buffers.framebuffer, contrast);
+    this.dispatchEvent(new CustomEvent("state:display", {
+      detail: {
+        framebuffer: this.state.buffers.framebuffer,
+        contrast
+      }
+    }));
 	}
 
 	debug_print = (start:number) => {

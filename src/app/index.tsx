@@ -6,7 +6,7 @@ import "./style.css";
 
 import { DockLayout, LayoutData } from 'rc-dock'
 
-import Minimon from "./system";
+import Minimon from "./machine";
 import Screen from "./screen";
 import Settings from "./settings";
 

@@ -16,9 +16,10 @@ ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-import { Component, useState } from "react";
+import { Component } from "react";
 import { GradientPicker } from 'react-linear-gradient-picker';
 import { SketchPicker } from 'react-color';
+import { Label, Slider } from "@blueprintjs/core";
 
 import Minimon from "../system";
 import SystemContext from "../context";
@@ -30,10 +31,8 @@ const WrappedColorPicker = ({ onSelect, ...rest }) => {
 	return (
 		<SketchPicker {...rest}
             disableAlpha={true}
-					  onChange={c => {
-						  const { r, g, b } = c.rgb;
-						  onSelect(`rgb(${r}, ${g}, ${b})`);
-					  }}/>
+					  onChange={c => onSelect(c.hex)}
+					  />
 	);
 }
 
@@ -46,26 +45,50 @@ export default class Settings extends Component {
     super(props);
 
     this.state = {
+      volume: 1,
+      stages: 1,
+      weights: [1,1,1,1],
       palette: [
-        { offset: '0.00', color: 'rgb(183, 202, 183)' },
-        { offset: '1.00', color: 'rgb(6, 24, 6)' }
+        { offset: '0.00', color: '#B7CAB7' },
+        { offset: '1.00', color: '#061806' }
       ]
     };
   }
 
-  const setPalette = (palette) => {
-    this.setState({ palette })
-  }
-
 	render() {
 		return (
-      <GradientPicker {...{
-        paletteHeight: 32,
-        palette: this.state.palette,
-        onPaletteChange: this.setPalette
-      }}>
-        <WrappedColorPicker/>
-      </GradientPicker>
+      <div>
+        <Label>
+          System Volume
+          <Slider
+            min={0.0}
+            max={1.0}
+            stepSize={0.01}
+            labelStepSize={0.2}
+            labelRenderer={(v) => `${Math.floor(v*100)}%`}
+            onChange={(volume) => this.setState({volume})}
+            value={this.state.volume}
+            />
+        </Label>
+
+        <Label>
+          LCD Blending
+          <Slider
+            min={1}
+            max={8}
+            stepSize={1}
+            labelStepSize={1}
+            onChange={(stages) => this.setState({stages})}
+            value={this.state.stages}
+            />
+        </Label>
+
+        <GradientPicker
+          palette={this.state.palette}
+          onPaletteChange={(palette) => this.setState({ palette })} >
+          <WrappedColorPicker />
+        </GradientPicker>
+      </div>
 		);
 	}
 }

@@ -37,6 +37,7 @@ export default class Screen extends Component {
   private ref:React.RefObject<HTMLCanvasElement>;
   private ctx:WebGL2RenderingContext | null | undefined;
   private tex:WebGLTexture | null;
+  private palette:WebGLTexture | null;
   private verts:WebGLBuffer | null;
   private program:WebGLProgram | null;
   private attributes;
@@ -51,6 +52,8 @@ export default class Screen extends Component {
 		this.ref = createRef();
     this.ctx = null;
     this.tex = null;
+    this.palette = null;
+
     this.verts = null;
     this.attributes = {};
     this.uniforms = {};
@@ -58,6 +61,8 @@ export default class Screen extends Component {
     this.animID = 0;
 
     this.contrast = 0.5;
+
+    console.log(this.context)
 	}
 
 	componentDidMount() {
@@ -68,15 +73,18 @@ export default class Screen extends Component {
 
     this.init();
     this.redraw();
-    this.context.repaint = this.updateTexture;
+
+    this.context.addEventListener("state:running", this.updateState);
+    this.context.addEventListener("state:display", this.updateScreen);
   }
 
 	componentWillUnmount() {
+    this.context.removeEventListener("state:running", this.updateState);
+    this.context.removeEventListener("state:display", this.updateScreen);
+
 		cancelAnimationFrame(this.animID);
 		this.ctx = null;
     this.animID = 0;
-
-		delete this.context.repaint;
 	}
 
   onDragOver (e) {
@@ -98,6 +106,10 @@ export default class Screen extends Component {
     };
 
     reader.readAsArrayBuffer(file);
+  }
+
+  const updateState = (e) => {
+    this.setState({ running: e.detail });
   }
 
 	init() {
@@ -170,23 +182,46 @@ export default class Screen extends Component {
     ]), gl.STATIC_DRAW);
 
 		this.tex = gl.createTexture();
-
 		gl.bindTexture(gl.TEXTURE_2D, this.tex);
 		gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, 128, 64, 0, gl.RED, gl.UNSIGNED_BYTE, new Uint8Array(0x2000));
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-	}
 
-	private updateTexture = (memory:Uint8Array, constrast:number) => {
+		this.palette = gl.createTexture();
+		gl.bindTexture(gl.TEXTURE_2D, this.palette);
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, 256, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(0x400));
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+
+    this.updatePalette()
+  }
+
+	private updateScreen = (e) => {
     const gl = this.ctx;
 
     if (!gl) return ;
 
-    this.contrast = constrast / 0x3F;
+    const { framebuffer, contrast } = e.detail;
+
+    this.contrast = contrast / 0x3F;
 
     gl.bindTexture(gl.TEXTURE_2D, this.tex);
-    gl.texSubImage2D(
-      gl.TEXTURE_2D, 0, 0, 0, VRAM_WIDTH, VRAM_HEIGHT, gl.RED, gl.UNSIGNED_BYTE, memory);
+    gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, VRAM_WIDTH, VRAM_HEIGHT, gl.RED, gl.UNSIGNED_BYTE, framebuffer);
+  }
+
+  private updatePalette = (palette) => {
+    const gl = this.ctx;
+
+    if (!gl) return ;
+
+    const memory = new Uint32Array(0x100);
+
+    for (let i = 0; i < memory.length; i++) {
+      memory[i] = 0x01000001 * i;
+    }
+
+    gl.bindTexture(gl.TEXTURE_2D, this.palette);
+    gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 256, 1, gl.RGBA, gl.UNSIGNED_BYTE, memory);
   }
 
   private redraw = () => {
@@ -215,6 +250,9 @@ export default class Screen extends Component {
 
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, this.tex);
+
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, this.palette);
 
     gl.uniform1f(this.uniforms.contrast, this.contrast);
 
