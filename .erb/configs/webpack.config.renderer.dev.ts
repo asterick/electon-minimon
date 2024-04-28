@@ -95,7 +95,7 @@ const configuration: webpack.Configuration = {
       },
       // WebAssembly
       {
-        test: /\.(wasm)$/i,
+        test: /\.wasm$/i,
         type: 'asset/resource',
       },
       // Shaders

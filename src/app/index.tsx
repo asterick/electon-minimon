@@ -23,7 +23,7 @@ export async function getApp() {
           tabs: [
             { id: 'system', title: "System", content: <Screen /> },
             { id: 'settings', title: "Settings", content: <Settings /> },
-            { id: 'registers', title: "Registers", content: <div></div> }
+            { id: 'registers', title: "Registers", content: <div /> }
           ]
         }
       ]

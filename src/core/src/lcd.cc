@@ -43,12 +43,12 @@ static void render(uint8_t (&framebuffer)[LCD_HEIGHT][LCD_WIDTH], LCD::State &lc
 
   if (!lcd.display_enable)
   {
-    fill(line, 0x80);
+    fill(line, 0x00);
     return;
   }
   else if (lcd.all_on)
   {
-    fill(line, 0x00);
+    fill(line, 0x80);
     return;
   }
 
@@ -60,7 +60,7 @@ static void render(uint8_t (&framebuffer)[LCD_HEIGHT][LCD_WIDTH], LCD::State &lc
   {
     uint8_t byte = current_page[lcd.adc_select ? 131 - x : x];
 
-    *(line++) = (*line >> 1) | (((byte & mask) != 0) ? 0x00 : 0x80);
+    *(line++) = (*line >> 1) | (((byte & mask) != 0) ? 0x80 : 0x00);
   }
 }
 
