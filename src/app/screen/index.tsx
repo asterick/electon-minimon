@@ -61,8 +61,6 @@ export default class Screen extends Component {
     this.animID = 0;
 
     this.contrast = 0.5;
-
-    console.log(this.context)
 	}
 
 	componentDidMount() {
@@ -106,10 +104,6 @@ export default class Screen extends Component {
     };
 
     reader.readAsArrayBuffer(file);
-  }
-
-  const updateState = (e) => {
-    this.setState({ running: e.detail });
   }
 
 	init() {
@@ -182,18 +176,15 @@ export default class Screen extends Component {
     ]), gl.STATIC_DRAW);
 
 		this.tex = gl.createTexture();
+    this.texBytes = new Uint8Array(128*64*4);
 		gl.bindTexture(gl.TEXTURE_2D, this.tex);
-		gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, 128, 64, 0, gl.RED, gl.UNSIGNED_BYTE, new Uint8Array(0x2000));
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, 128, 64, 0, gl.RGBA, gl.UNSIGNED_BYTE, this.texBytes);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+  }
 
-		this.palette = gl.createTexture();
-		gl.bindTexture(gl.TEXTURE_2D, this.palette);
-		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, 256, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(0x400));
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-
-    this.updatePalette()
+  const updateState = (e) => {
+    this.setState({ running: e.detail });
   }
 
 	private updateScreen = (e) => {
@@ -205,23 +196,12 @@ export default class Screen extends Component {
 
     this.contrast = contrast / 0x3F;
 
-    gl.bindTexture(gl.TEXTURE_2D, this.tex);
-    gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, VRAM_WIDTH, VRAM_HEIGHT, gl.RED, gl.UNSIGNED_BYTE, framebuffer);
-  }
-
-  private updatePalette = (palette) => {
-    const gl = this.ctx;
-
-    if (!gl) return ;
-
-    const memory = new Uint32Array(0x100);
-
-    for (let i = 0; i < memory.length; i++) {
-      memory[i] = 0x01000001 * i;
+    for (let i = 0; i < VRAM_HEIGHT * VRAM_WIDTH; i++) {
+      this.texBytes[i * 4] = framebuffer[i];
     }
 
-    gl.bindTexture(gl.TEXTURE_2D, this.palette);
-    gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 256, 1, gl.RGBA, gl.UNSIGNED_BYTE, memory);
+    gl.bindTexture(gl.TEXTURE_2D, this.tex);
+    gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, VRAM_WIDTH, VRAM_HEIGHT, gl.RGBA, gl.UNSIGNED_BYTE, this.texBytes);
   }
 
   private redraw = () => {
@@ -253,8 +233,6 @@ export default class Screen extends Component {
 
     gl.activeTexture(gl.TEXTURE1);
     gl.bindTexture(gl.TEXTURE_2D, this.palette);
-
-    gl.uniform1f(this.uniforms.contrast, this.contrast);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, this.verts);
     gl.enableVertexAttribArray(this.attributes.position);
