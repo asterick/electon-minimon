@@ -25,8 +25,6 @@ import SystemContext from "../context";
 import VertexShader from "./shaders/vertex.glsl";
 import FragmentShader from "./shaders/fragment.glsl";
 
-import { ButtonGroup, Button } from "@blueprintjs/core";
-
 const VRAM_WIDTH  = 96;
 const VRAM_HEIGHT = 64;
 
@@ -37,7 +35,6 @@ export default class Screen extends Component {
   private ref:React.RefObject<HTMLCanvasElement>;
   private ctx:WebGL2RenderingContext | null | undefined;
   private tex:WebGLTexture | null;
-  private palette:WebGLTexture | null;
   private verts:WebGLBuffer | null;
   private program:WebGLProgram | null;
   private attributes;
@@ -52,7 +49,6 @@ export default class Screen extends Component {
 		this.ref = createRef();
     this.ctx = null;
     this.tex = null;
-    this.palette = null;
 
     this.verts = null;
     this.attributes = {};
@@ -73,12 +69,10 @@ export default class Screen extends Component {
     this.redraw();
 
     this.context.addEventListener("state:running", this.updateState);
-    this.context.addEventListener("state:display", this.updateScreen);
   }
 
 	componentWillUnmount() {
     this.context.removeEventListener("state:running", this.updateState);
-    this.context.removeEventListener("state:display", this.updateScreen);
 
 		cancelAnimationFrame(this.animID);
 		this.ctx = null;
@@ -176,9 +170,8 @@ export default class Screen extends Component {
     ]), gl.STATIC_DRAW);
 
 		this.tex = gl.createTexture();
-    this.texBytes = new Uint8Array(128*64*4);
 		gl.bindTexture(gl.TEXTURE_2D, this.tex);
-		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, 128, 64, 0, gl.RGBA, gl.UNSIGNED_BYTE, this.texBytes);
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, 128, 64, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(128*64*4));
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
   }
@@ -187,29 +180,15 @@ export default class Screen extends Component {
     this.setState({ running: e.detail });
   }
 
-	private updateScreen = (e) => {
-    const gl = this.ctx;
-
-    if (!gl) return ;
-
-    const { framebuffer, contrast } = e.detail;
-
-    this.contrast = contrast / 0x3F;
-
-    for (let i = 0; i < VRAM_HEIGHT * VRAM_WIDTH; i++) {
-      this.texBytes[i * 4] = framebuffer[i];
-    }
-
-    gl.bindTexture(gl.TEXTURE_2D, this.tex);
-    gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, VRAM_WIDTH, VRAM_HEIGHT, gl.RGBA, gl.UNSIGNED_BYTE, this.texBytes);
-  }
-
   private redraw = () => {
     const gl = this.ctx;
     const width = this.ref.current.clientWidth;
     const height = this.ref.current.clientHeight;
 
     this.animID = requestAnimationFrame(this.redraw);
+
+    gl.bindTexture(gl.TEXTURE_2D, this.tex);
+    gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, VRAM_WIDTH, VRAM_HEIGHT, gl.RGBA, gl.UNSIGNED_BYTE, this.context.state.buffers.framebuffer);
 
     if (width != this.ref.current.width || height != this.ref.current.height) {
       this.ref.current.width = width;
@@ -231,9 +210,6 @@ export default class Screen extends Component {
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, this.tex);
 
-    gl.activeTexture(gl.TEXTURE1);
-    gl.bindTexture(gl.TEXTURE_2D, this.palette);
-
     gl.bindBuffer(gl.ARRAY_BUFFER, this.verts);
     gl.enableVertexAttribArray(this.attributes.position);
     gl.enableVertexAttribArray(this.attributes.uv);
@@ -244,21 +220,11 @@ export default class Screen extends Component {
 
 	render() {
 		return (
-			<div className="system">
-        <div className="toolbar">
-        <ButtonGroup fill={true}>
-            <Button icon={this.context.running ? "stop" : "play"} onClick={(e) => this.context.running = !this.context.running}>{this.context.running ? "Stop" : "Play"}</Button>
-            <Button icon="reset" onClick={(e) => this.context.reset()}>Reset</Button>
-            <Button icon="step-forward" onClick={(e) => this.context.step()}>Step</Button>
-            <Button fill={true} disabled={true} />
-          </ButtonGroup>
-        </div>
-        <div className="screen"
-          onDragOver={(e) => this.onDragOver(e)}
-          onDragLeave={(e) => this.onDragLeave(e)}
-          onDrop={(e) => this.onDrop(e)}>
-          <canvas ref={this.ref}/>
-        </div>
+      <div className="screen"
+        onDragOver={(e) => this.onDragOver(e)}
+        onDragLeave={(e) => this.onDragLeave(e)}
+        onDrop={(e) => this.onDrop(e)}>
+        <canvas ref={this.ref}/>
       </div>
 		);
 	}

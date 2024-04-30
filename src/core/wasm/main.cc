@@ -254,8 +254,10 @@ static const StructDecl MachineBuffers = {
     sizeof(Machine::Buffers),
     (const FieldDecl[]){
         FIELD("cartridge", Machine::Buffers, cartridge, TYPE_UINT8, SIZE(0x200000)),
-        FIELD("framebuffer", Machine::Buffers, framebuffer, TYPE_UINT8, SIZE(LCD_WIDTH *LCD_HEIGHT)),
         FIELD("audio", Machine::Buffers, audio, TYPE_FLOAT32, SIZE(AUDIO_BUFFER_LENGTH)),
+        FIELD("framebuffer", Machine::Buffers, framebuffer, TYPE_UINT8, SIZE(LCD_WIDTH *LCD_HEIGHT * sizeof(uint32_t))),
+        FIELD("palette", Machine::Buffers, palette, TYPE_UINT32, SIZE(0x100)),
+        FIELD("weights", Machine::Buffers, weights, TYPE_FLOAT32, SIZE(0x100)),
         {TYPE_END}}};
 
 static const StructDecl MachineState = {

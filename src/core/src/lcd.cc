@@ -27,8 +27,6 @@ void LCD::reset(LCD::State &lcd)
   memset(&lcd, 0, sizeof(lcd));
 }
 
-extern "C" void flip_screen(uint8_t constrast);
-
 static inline void fill(uint8_t *target, uint8_t color)
 {
   for (int i = LCD_WIDTH; i > 0; i--)
@@ -37,9 +35,9 @@ static inline void fill(uint8_t *target, uint8_t color)
   }
 }
 
-static void render(uint8_t (&framebuffer)[LCD_HEIGHT][LCD_WIDTH], LCD::State &lcd, uint8_t com)
+static void render(Machine::Buffers &buffers, LCD::State &lcd, uint8_t com)
 {
-  uint8_t *line = framebuffer[lcd.reverse_com_scan ? (63 - com) : com];
+  uint8_t *line = buffers.lcd_shift[lcd.reverse_com_scan ? (63 - com) : com];
 
   if (!lcd.display_enable)
   {
@@ -77,12 +75,27 @@ void LCD::clock(Machine::State &cpu, int osc3)
 
     if (cpu.lcd.scanline < 0x40)
     {
-      render(cpu.buffers.framebuffer, cpu.lcd, cpu.lcd.scanline);
+      render(cpu.buffers, cpu.lcd, cpu.lcd.scanline);
     }
     else
     {
-      flip_screen(cpu.lcd.volume);
+      uint32_t *framebuffer = &cpu.buffers.framebuffer[0][0];
+      const uint8_t *lcd_shift = &cpu.buffers.lcd_shift[0][0];
+
+      static uint8_t volume = 0;
+      const float lo = (volume <= 0x20) ? 0.0f : (volume - 0x20) / 31.0f;
+      const float hi = (volume >= 0x20) ? 1.0f : volume / 31.0f;
+      const float range = hi - lo;
+
+      for (int i = LCD_WIDTH * LCD_HEIGHT; i; i--)
+      {
+        float weight = cpu.buffers.weights[*(lcd_shift++)] * range + lo;
+        int color = (int)(0x100 * weight);
+        *(framebuffer++) = cpu.buffers.palette[color > 0xFF ? 0xFF : 0];
+      }
+
       Blitter::clock(cpu);
+      volume = cpu.lcd.volume;
     }
 
     cpu.lcd.overflow -= OSC3_SPEED;

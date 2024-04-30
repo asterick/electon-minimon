@@ -84,6 +84,12 @@ export default class Minimon extends EventTarget {
 
 		inst.state = struct(inst.exports.memory.buffer, inst.exports.get_description(), inst.cpu_state);
 
+    // Setup initial palette
+    for (let i = 0; i <= 0xFF; i++) {
+      inst.state.buffers.palette[i] = 0x010101 * i ^ ~0;
+      inst.state.buffers.weights[i] = i / 255.0;
+    }
+
 		inst.reset();
 
 		return inst;
@@ -166,15 +172,6 @@ export default class Minimon extends EventTarget {
 
 	audio_push = () => {
 		this.audio.push(this.state.buffers.audio);
-	}
-
-	flip_screen = (contrast:number) => {
-    this.dispatchEvent(new CustomEvent("state:display", {
-      detail: {
-        framebuffer: this.state.buffers.framebuffer,
-        contrast
-      }
-    }));
 	}
 
 	debug_print = (start:number) => {

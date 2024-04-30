@@ -9,11 +9,13 @@ import { DockLayout, LayoutData } from 'rc-dock'
 import Minimon from "./machine";
 import Screen from "./screen";
 import Settings from "./settings";
+//import Debugger from "./debugger";
 
 import SystemContext from "./context";
 
 export async function getApp() {
   const system = await Minimon.getMinimon();
+  system.running = true;
 
   const defaultLayout:LayoutData = {
     dockbox: {
@@ -23,7 +25,7 @@ export async function getApp() {
           tabs: [
             { id: 'system', title: "System", content: <Screen /> },
             { id: 'settings', title: "Settings", content: <Settings /> },
-            { id: 'registers', title: "Registers", content: <div /> }
+            //{ id: 'debugger', title: "Debugger", content: <Debugger /> }
           ]
         }
       ]
