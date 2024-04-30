@@ -102,8 +102,6 @@ export default class Minimon extends EventTarget {
 	set running(v) {
 		if (this.running == v) return ;
 
-    this.dispatchEvent(new CustomEvent("state:running", { detail: v }));
-
 		if (v) {
 			this.systemTime = Date.now();
 			this.runTimer = setInterval(this.tick, 0);
@@ -112,7 +110,7 @@ export default class Minimon extends EventTarget {
 			this.runTimer = null;
 		}
 
-		this.update();
+		this.dispatchEvent(new CustomEvent("update:running", { detail: v }))
 	}
 
 	tick = () => {
@@ -142,7 +140,7 @@ export default class Minimon extends EventTarget {
 	}
 
 	update() {
-		this.dispatchEvent(new CustomEvent("state", { details: this.state }))
+		this.dispatchEvent(new CustomEvent("update:state", { detail: this.state }))
 	}
 
 	private updateInput() {
