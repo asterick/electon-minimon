@@ -85,13 +85,14 @@ void LCD::clock(Machine::State &cpu, int osc3)
       static uint8_t volume = 0;
       const float lo = (volume <= 0x20) ? 0.0f : (volume - 0x20) / 31.0f;
       const float hi = (volume >= 0x20) ? 1.0f : volume / 31.0f;
+
       const float range = hi - lo;
 
       for (int i = LCD_WIDTH * LCD_HEIGHT; i; i--)
       {
         float weight = cpu.buffers.weights[*(lcd_shift++)] * range + lo;
-        int color = (int)(0x100 * weight);
-        *(framebuffer++) = cpu.buffers.palette[color > 0xFF ? 0xFF : 0];
+        int color = (int)(256.0f * weight);
+        *(framebuffer++) = cpu.buffers.palette[color > 0xFF ? 0xFF : color];
       }
 
       Blitter::clock(cpu);
