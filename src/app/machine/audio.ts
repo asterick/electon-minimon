@@ -39,7 +39,7 @@ export default class Audio {
                 "stream-audio-processor",
             );
 
-            this.node.connect(audioContext.destination);
+            //this.node.connect(audioContext.destination);
         });
     }
 

@@ -159,15 +159,15 @@ void Blitter::clock(Machine::State &cpu)
       uint8_t sprite_x = cpu.overlay.oam[i][0] & 0x7F;
       uint8_t sprite_y = cpu.overlay.oam[i][1] & 0x7F;
       uint8_t sprite_tile = cpu.overlay.oam[i][2];
-      bool sprite_xflip = sprite_enable & 0b0001;
-      bool sprite_yflip = sprite_enable & 0b0010;
-      bool sprite_invert = sprite_enable & 0b0100;
+      bool sprite_xflip = sprite_flags & 0b0001;
+      bool sprite_yflip = sprite_flags & 0b0010;
+      bool sprite_invert = sprite_flags & 0b0100;
 
       auto address = cpu.blitter.sprite_base + sprite_tile * (8 * 8);
       int dx = sprite_x - 16;
       int dy = sprite_y - 16;
 
-      int invert = sprite_xflip ? 0b0100111 : 0;
+      int invert = sprite_xflip ? 0b0000111 : 0;
 
       if (dy <= -16 || dy >= SCREEN_HEIGHT)
         continue;
@@ -244,9 +244,16 @@ uint8_t Blitter::read(Machine::State &cpu, uint32_t address)
   switch (address)
   {
   case 0x2080:
-    return 0 | (cpu.blitter.invert_map ? 0b0001 : 0) | (cpu.blitter.enable_map ? 0b0010 : 0) | (cpu.blitter.enable_sprites ? 0b0100 : 0) | (cpu.blitter.enable_copy ? 0b1000 : 0) | (cpu.blitter.map_size << 4);
+    return 0 |
+           (cpu.blitter.invert_map ? 0b0001 : 0) |
+           (cpu.blitter.enable_map ? 0b0010 : 0) |
+           (cpu.blitter.enable_sprites ? 0b0100 : 0) |
+           (cpu.blitter.enable_copy ? 0b1000 : 0) |
+           (cpu.blitter.map_size << 4);
   case 0x2081:
-    return (cpu.blitter.frame_divider << 1) | (cpu.blitter.frame_count << 4) | (cpu.blitter.lcd_init ? 1 : 0);
+    return (cpu.blitter.frame_divider << 1) |
+           (cpu.blitter.frame_count << 4) |
+           (cpu.blitter.lcd_init ? 1 : 0);
   case 0x2085:
     return cpu.blitter.scroll_y;
   case 0x2086:
