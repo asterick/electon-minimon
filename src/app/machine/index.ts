@@ -155,14 +155,13 @@ export default class Minimon extends EventTarget {
 		var hasHeader = (bytes[0] != 0x50 || bytes[1] != 0x4D);
 		var offset = hasHeader ? 0 : 0x2100;
 
+		this.eject();
+    for (let i = bytes.length - 1; i >= 0; i--) this.state.buffers.cartridge[(i+offset) & 0x1FFFFF] = bytes[i];
 
 		setTimeout(() => {
-			for (let i = bytes.length - 1; i >= 0; i--) this.state.cartridge[(i+offset) & 0x1FFFFF] = bytes[i];
 			this.inputState &= ~INPUT_CART_N;
 			this.updateInput();
 		}, 100);
-
-		this.eject();
 	}
 
 	eject() {
