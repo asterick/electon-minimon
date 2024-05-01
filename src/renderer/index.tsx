@@ -1,5 +1,5 @@
 import { createRoot } from 'react-dom/client';
-import { getApp } from '../app';
+import { App } from '../app';
 import Minimon from '../app/machine';
 
 async function main() {
@@ -8,7 +8,8 @@ async function main() {
 
   const container = document.getElementById('root') as HTMLElement;
   const root = createRoot(container);
-  root.render(await getApp(system, window.electron.store));
+
+  root.render(<App system={system} store={window.electron.store} />);
 
   window.electron.ipcRenderer.on('load-file', (binary) => system.load(binary));
 }

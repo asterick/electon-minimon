@@ -1,16 +1,12 @@
-import 'normalize.css/normalize.css';
-import 'rc-dock/dist/rc-dock.css';
-import '@blueprintjs/core/lib/css/blueprint.css';
-import '@blueprintjs/icons/lib/css/blueprint-icons.css';
-import './style.css';
-
-import { DockLayout, LayoutData } from 'rc-dock';
+import { useEffect, useState } from 'react';
+import { DockviewReact } from 'dockview';
 
 import Screen from './screen';
 import Settings from './settings';
 import Debugger from './debugger';
-
 import SystemContext from './context';
+
+import './style.scss';
 
 const defaultSettings = {
   settings: {
@@ -26,7 +22,21 @@ const defaultSettings = {
   },
 };
 
-export async function getApp(system, store) {
+/*
+const api: DockviewPanelApi  = props.api;
+const groupApi: DockviewGroupPanelApi  = props.group.api;
+const containerApi: DockviewApi  = props.containerApi;
+*/
+
+const components = {
+  screen: (props: IDockviewPanelProps) => <Screen />,
+  debugger: (props: IDockviewPanelProps) => <Debugger />,
+  settings: (props: IDockviewPanelProps) => <Settings />
+};
+
+export function App({ store, system }) {
+  const [darkMode, setDarkMode] = useState(true);
+
   function getStore(key) {
     return store.get(key) || defaultSettings[key];
   }
@@ -128,27 +138,52 @@ export async function getApp(system, store) {
   }
   rebuild();
 
-  // Setup UI
-  const defaultLayout: LayoutData = {
-    dockbox: {
-      mode: 'horizontal',
-      children: [
-        {
-          tabs: [
-            { id: 'system', title: 'System', content: <Screen /> },
-            { id: 'settings', title: 'Settings', content: <Settings /> },
-            { id: 'debugger', title: 'Debugger', content: <Debugger /> },
-          ],
-        },
-      ],
-    },
-  };
+  /* Casual hook to read darkmode status from main process */
+  useEffect(() => {
+    if (typeof window !== 'undefined' && typeof window.process === 'object' && window.process.type === 'renderer') {
+      window.electron.ipcRenderer.on('dark-mode', (darkMode) => setDarkMode(darkMode)); // This should use the sent value
+      window.electron.getDarkMode();
+    } else {
+      if (window.matchMedia) {
+        setDarkMode(window.matchMedia('(prefers-color-scheme: dark)').matches);
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+          setDarkMode(event.matches);
+        });
+      }
+    }
+  });
+
+  function onReady(event: DockviewReadyEvent) {
+    /**
+     * You should store a reference to `api` in a Ref or State
+     * for later interactions
+     */
+    const api: DockviewApi = event.api;
+
+    api.addPanel({
+      id: 'screen',
+      component: 'screen',
+      title: 'Screen',
+    });
+    api.addPanel({
+      id: 'debugger',
+      component: 'debugger',
+      title: 'Debugger',
+    });
+    api.addPanel({
+      id: 'settings',
+      component: 'settings',
+      title: 'Settings',
+    });
+  }
 
   return (
-    <SystemContext.Provider
-      value={{ system, store: { get: getStore, set: setStore } }}
-    >
-      <DockLayout defaultLayout={defaultLayout} />
-    </SystemContext.Provider>
+    <div className={darkMode ? "bp5-dark dockview-theme-abyss root-container" : "dockview-theme-light root-container"}>
+      <SystemContext.Provider
+        value={{ system, store: { get: getStore, set: setStore } }}
+        >
+        <DockviewReact components={components} onReady={onReady} />
+      </SystemContext.Provider>
+    </div>
   );
 }

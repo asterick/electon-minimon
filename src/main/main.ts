@@ -9,7 +9,7 @@
  * `./src/main.js` using webpack. This gives us some performance wins.
  */
 import path from 'path';
-import { app, BrowserWindow, shell, ipcMain } from 'electron';
+import { app, BrowserWindow, shell, ipcMain, nativeTheme } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import Store from 'electron-store';
@@ -34,6 +34,9 @@ ipcMain.on('electron-store-get', async (event, val) => {
 });
 ipcMain.on('electron-store-set', async (event, key, val) => {
   store.set(key, val);
+});
+ipcMain.on('get-dark-mode', () => {
+  mainWindow?.webContents.send('dark-mode', nativeTheme.shouldUseDarkColors);
 });
 
 if (process.env.NODE_ENV === 'production') {
@@ -96,6 +99,7 @@ const createWindow = async () => {
       mainWindow.minimize();
     } else {
       mainWindow.show();
+      mainWindow?.webContents.send('dark-mode', nativeTheme.shouldUseDarkColors);
     }
   });
 
@@ -140,3 +144,9 @@ app
     });
   })
   .catch(console.log);
+
+nativeTheme.on('updated', (e) => {
+  mainWindow?.webContents.send('dark-mode', nativeTheme.shouldUseDarkColors);
+});
+
+

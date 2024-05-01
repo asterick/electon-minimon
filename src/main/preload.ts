@@ -13,6 +13,9 @@ const electronHandler = {
       ipcRenderer.send('electron-store-set', property, val);
     },
   },
+  getDarkMode: () => {
+    ipcRenderer.send('get-dark-mode');
+  },
   ipcRenderer: {
     sendMessage(channel: Channels, ...args: unknown[]) {
       ipcRenderer.send(channel, ...args);
