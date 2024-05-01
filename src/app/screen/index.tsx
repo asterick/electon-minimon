@@ -112,7 +112,6 @@ export default class Screen extends Component {
 		gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
 		gl.colorMask(true, true, true, false);
-		gl.clearColor(1.0, 1.0, 1.0, 1.0);
 		gl.clear(gl.COLOR_BUFFER_BIT);
 
 		var vertexShader =  gl.createShader(gl.VERTEX_SHADER);
@@ -201,6 +200,7 @@ export default class Screen extends Component {
         gl.viewport(0, (height - fit_y) / 2, width, fit_y);
       }
 
+      gl.clearColor(this.context.system.clearColor.r, this.context.system.clearColor.g, this.context.system.clearColor.b, 1.0);
       gl.clear(gl.COLOR_BUFFER_BIT);
     }
 

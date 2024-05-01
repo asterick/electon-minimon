@@ -48,6 +48,8 @@ export default class Minimon extends EventTarget {
 
 	private inputState:number;
 
+  public clearColor = { r: 1, g: 1, b: 1 }
+
 	private constructor() {
     super();
 
