@@ -1,6 +1,6 @@
 import { createRoot } from 'react-dom/client';
 import { getApp } from '../app';
-import Minimon from "../app/machine";
+import Minimon from '../app/machine';
 
 async function main() {
   const system = await Minimon.getMinimon();

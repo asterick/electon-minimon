@@ -16,34 +16,31 @@ ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-import { useContext, useState, useEffect } from "react";
+import { useContext, useState, useEffect } from 'react';
 import { GradientPicker } from 'react-linear-gradient-picker';
 import { SketchPicker } from 'react-color';
-import { Slider, HTMLSelect, FormGroup, ControlGroup } from "@blueprintjs/core";
+import { Slider, HTMLSelect, FormGroup, ControlGroup } from '@blueprintjs/core';
 
-import SystemContext from "../context";
+import SystemContext from '../context';
 
 import 'react-linear-gradient-picker/dist/index.css';
 import './index.css';
 
-const WrappedColorPicker = ({ onSelect, ...rest }) => {
+function WrappedColorPicker({ onSelect, ...rest }) {
   return (
-    <SketchPicker {... rest}
-            disableAlpha={true}
-            onChange={(c) => onSelect(c.hex)}
-            />
+    <SketchPicker {...rest} disableAlpha onChange={(c) => onSelect(c.hex)} />
   );
 }
 
 const blendingTypeValues: OptionProps<string>[] = [
-  { value: "disabled", label: "No Blending" },
-  { value: "logorithmic", label: "Realistic Ghosting" } ,
-  { value: "true-gray", label: "Pure gray" } ,
-  { value: "custom", label: "Custom Weights" },
+  { value: 'disabled', label: 'No Blending' },
+  { value: 'logorithmic', label: 'Realistic Ghosting' },
+  { value: 'true-gray', label: 'Pure gray' },
+  { value: 'custom', label: 'Custom Weights' },
 ];
 
 export default function Settings() {
-	const context = useContext(SystemContext);
+  const context = useContext(SystemContext);
   const settings = context.store.get('settings');
 
   const [volume, setVolume] = useState(settings.volume);
@@ -55,86 +52,84 @@ export default function Settings() {
 
   useEffect(() => {
     context.store.set('settings', {
-      volume, frames, blendingType, weights, intensity, palette
+      volume,
+      frames,
+      blendingType,
+      weights,
+      intensity,
+      palette,
     });
   });
 
-  return <>
-    <FormGroup label="System Volume">
-      <Slider
-        min={0.0}
-        max={1.0}
-        stepSize={0.01}
-        labelStepSize={0.2}
-        labelRenderer={(v) => `${Math.floor(v*100)}%`}
-        onChange={setVolume}
-        value={volume}
+  return (
+    <>
+      <FormGroup label="System Volume">
+        <Slider
+          min={0.0}
+          max={1.0}
+          stepSize={0.01}
+          labelStepSize={0.2}
+          labelRenderer={(v) => `${Math.floor(v * 100)}%`}
+          onChange={setVolume}
+          value={volume}
         />
-    </FormGroup>
+      </FormGroup>
 
-    <FormGroup>
-      <HTMLSelect
-          fill={true}
+      <FormGroup>
+        <HTMLSelect
+          fill
           value={blendingType}
           iconName="caret-down"
           options={blendingTypeValues}
           onChange={(e) => setBlendingType(e.target.value)}
-          />
-    </FormGroup>
+        />
+      </FormGroup>
 
-    {blendingType == "custom" &&
-    <FormGroup label="Frame Weights">
-      <ControlGroup>
-        {
-          weights.map((v, i) =>
-            <Slider
-              key={i}
-              min={0.0}
-              max={1.0}
-              stepSize={0.01}
-              vertical={true}
-              value={weights[i]}
-              onChange={(v) => {
-                let newWeights = [... weights];
-                newWeights[i] = v;
-                setWeights(newWeights);
-              }}
+      {blendingType == 'custom' && (
+        <FormGroup label="Frame Weights">
+          <ControlGroup>
+            {weights.map((v, i) => (
+              <Slider
+                key={i}
+                min={0.0}
+                max={1.0}
+                stepSize={0.01}
+                vertical
+                value={weights[i]}
+                onChange={(v) => {
+                  const newWeights = [...weights];
+                  newWeights[i] = v;
+                  setWeights(newWeights);
+                }}
               />
-          )
-        }
-      </ControlGroup>
-    </FormGroup>
-    }
+            ))}
+          </ControlGroup>
+        </FormGroup>
+      )}
 
-    {blendingType == "true-gray" &&
-    <FormGroup label="Blending Frames">
-      <Slider
-        min={2}
-        max={8}
-        onChange={setFrames}
-        value={frames}
-        />
-    </FormGroup>
-    }
+      {blendingType == 'true-gray' && (
+        <FormGroup label="Blending Frames">
+          <Slider min={2} max={8} onChange={setFrames} value={frames} />
+        </FormGroup>
+      )}
 
-    {blendingType == "logorithmic" &&
-    <FormGroup label="Persistence">
-      <Slider
-        min={0.0}
-        max={1.0}
-        stepSize={0.01}
-        labelStepSize={0.2}
-        labelRenderer={(v) => `${Math.floor(v*100)}%`}
-        onChange={setIntensity}
-        value={intensity}
-        />
-    </FormGroup>
-    }
+      {blendingType == 'logorithmic' && (
+        <FormGroup label="Persistence">
+          <Slider
+            min={0.0}
+            max={1.0}
+            stepSize={0.01}
+            labelStepSize={0.2}
+            labelRenderer={(v) => `${Math.floor(v * 100)}%`}
+            onChange={setIntensity}
+            value={intensity}
+          />
+        </FormGroup>
+      )}
 
-    <GradientPicker
-      palette={palette}
-      onPaletteChange={setPalette} >
-      <WrappedColorPicker />
-    </GradientPicker>
-  </>;
+      <GradientPicker palette={palette} onPaletteChange={setPalette}>
+        <WrappedColorPicker />
+      </GradientPicker>
+    </>
+  );
 }

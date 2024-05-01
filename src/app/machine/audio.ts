@@ -19,10 +19,13 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 const BUFFER_LENGTH = 1024; // This is the size of an audio clip push
 
 const audioContext = new AudioContext();
-const workletPromise = audioContext.audioWorklet.addModule(new URL('./audio.worklet.js', import.meta.url))
+const workletPromise = audioContext.audioWorklet.addModule(
+  new URL('./audio.worklet.js', import.meta.url),
+);
 
 export default class Audio {
   private streamNode: AudioWorkletNode?;
+
   private volNode: GainNode;
 
   constructor() {
@@ -33,7 +36,7 @@ export default class Audio {
     workletPromise.then(() => {
       this.streamNode = new AudioWorkletNode(
         audioContext,
-        "stream-audio-processor",
+        'stream-audio-processor',
       );
 
       this.streamNode.connect(this.volNode);

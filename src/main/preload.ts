@@ -11,7 +11,7 @@ const electronHandler = {
     },
     set(property, val) {
       ipcRenderer.send('electron-store-set', property, val);
-    }
+    },
   },
   ipcRenderer: {
     sendMessage(channel: Channels, ...args: unknown[]) {

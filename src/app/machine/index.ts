@@ -16,8 +16,8 @@ ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-import { struct } from "./state";
-import Audio from "./audio";
+import { struct } from './state';
+import Audio from './audio';
 
 import AssemblyCore from '../../../assets/libminimon.wasm';
 
@@ -29,7 +29,7 @@ const KEYBOARD_CODES = {
   40: 0b00010000,
   37: 0b00100000,
   39: 0b01000000,
-  8: 0b10000000
+  8: 0b10000000,
 };
 
 const INPUT_CART_N = 0b1000000000;
@@ -37,18 +37,24 @@ const CPU_FREQ = 4000000;
 
 export default class Minimon extends EventTarget {
   public state: Object | null;
+
   public audio: Audio;
 
   private cpu_state: number;
+
   private machineBytes: Uint8Array | null;
+
   private exports;
+
   private runTimer;
+
   private systemTime: number;
+
   private breakpoints: Array<number>;
 
   private inputState: number;
 
-  public clearColor = { r: 1, g: 1, b: 1 }
+  public clearColor = { r: 1, g: 1, b: 1 };
 
   private constructor() {
     super();
@@ -68,7 +74,7 @@ export default class Minimon extends EventTarget {
     });
 
     document.body.addEventListener('keyup', (e: KeyboardEvent) => {
-      this.inputState |= (KEYBOARD_CODES[e.keyCode] || 0);
+      this.inputState |= KEYBOARD_CODES[e.keyCode] || 0;
       this.updateInput();
     });
   }
@@ -77,18 +83,24 @@ export default class Minimon extends EventTarget {
     const inst = new Minimon();
 
     const request = await fetch(AssemblyCore);
-    const wasm = await WebAssembly.instantiate(await request.arrayBuffer(), { env: inst });
+    const wasm = await WebAssembly.instantiate(await request.arrayBuffer(), {
+      env: inst,
+    });
 
     inst.exports = wasm.instance.exports;
     inst.cpu_state = inst.exports.get_machine();
     inst.machineBytes = new Uint8Array(inst.exports.memory.buffer);
     inst.exports.set_sample_rate(inst.cpu_state, inst.audio.sampleRate);
 
-    inst.state = struct(inst.exports.memory.buffer, inst.exports.get_description(), inst.cpu_state);
+    inst.state = struct(
+      inst.exports.memory.buffer,
+      inst.exports.get_description(),
+      inst.cpu_state,
+    );
 
     // Setup initial palette
-    for (let i = 0; i <= 0xFF; i++) {
-      inst.state.buffers.palette[i] = 0x010101 * i ^ ~0;
+    for (let i = 0; i <= 0xff; i++) {
+      inst.state.buffers.palette[i] = (0x010101 * i) ^ ~0;
       inst.state.buffers.weights[i] = i / 255.0;
     }
 
@@ -112,19 +124,21 @@ export default class Minimon extends EventTarget {
       this.runTimer = null;
     }
 
-    this.dispatchEvent(new CustomEvent("update:running", { detail: v }))
+    this.dispatchEvent(new CustomEvent('update:running', { detail: v }));
   }
 
   tick = () => {
     if (!this.running) return;
 
-    let now = Date.now();
-    let delta = Math.floor(Math.min(200, now - this.systemTime) * CPU_FREQ / 1000);
+    const now = Date.now();
+    const delta = Math.floor(
+      (Math.min(200, now - this.systemTime) * CPU_FREQ) / 1000,
+    );
 
     this.systemTime = now;
 
     if (this.breakpoints.length) {
-      this.state.clocks += delta;	// advance our clock
+      this.state.clocks += delta; // advance our clock
 
       while (this.state.clocks > 0) {
         if (this.breakpoints.indexOf(this.translate(this.state.cpu.pc)) >= 0) {
@@ -139,10 +153,10 @@ export default class Minimon extends EventTarget {
     }
 
     this.update();
-  }
+  };
 
   update() {
-    this.dispatchEvent(new CustomEvent("update:state", { detail: this.state }))
+    this.dispatchEvent(new CustomEvent('update:state', { detail: this.state }));
   }
 
   private updateInput() {
@@ -151,12 +165,13 @@ export default class Minimon extends EventTarget {
 
   // Cartridge I/O
   load(ab) {
-    var bytes = new Uint8Array(ab);
-    var hasHeader = (bytes[0] != 0x50 || bytes[1] != 0x4D);
-    var offset = hasHeader ? 0 : 0x2100;
+    const bytes = new Uint8Array(ab);
+    const hasHeader = bytes[0] != 0x50 || bytes[1] != 0x4d;
+    const offset = hasHeader ? 0 : 0x2100;
 
     this.eject();
-    for (let i = bytes.length - 1; i >= 0; i--) this.state.buffers.cartridge[(i + offset) & 0x1FFFFF] = bytes[i];
+    for (let i = bytes.length - 1; i >= 0; i--)
+      this.state.buffers.cartridge[(i + offset) & 0x1fffff] = bytes[i];
 
     setTimeout(() => {
       this.inputState &= ~INPUT_CART_N;
@@ -171,25 +186,30 @@ export default class Minimon extends EventTarget {
 
   audio_push = () => {
     this.audio.push(this.state.buffers.audio);
-  }
+  };
 
   debug_print = (start: number) => {
-    let utf8decoder = new TextDecoder();
-    let end = this.machineBytes?.indexOf(0, start);
+    const utf8decoder = new TextDecoder();
+    const end = this.machineBytes?.indexOf(0, start);
 
-    const string = utf8decoder.decode(new Uint8Array(this.machineBytes.buffer, start, end - start));
-  }
+    const string = utf8decoder.decode(
+      new Uint8Array(this.machineBytes.buffer, start, end - start),
+    );
+  };
 
-  trace_access = (cpu: number, address: number, kind: number, data: number) => {
-  }
+  trace_access = (
+    cpu: number,
+    address: number,
+    kind: number,
+    data: number,
+  ) => {};
 
   // WASM shim functions
   translate(address: number) {
     if (address & 0x8000) {
-      return (address & 0x7FFF) | (this.state.cpu.cb << 15);
-    } else {
-      return address;
+      return (address & 0x7fff) | (this.state.cpu.cb << 15);
     }
+    return address;
   }
 
   step() {
