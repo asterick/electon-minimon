@@ -2,9 +2,11 @@ import {
   app,
   Menu,
   shell,
+  dialog,
   BrowserWindow,
-  MenuItemConstructorOptions,
+  MenuItemConstructorOptions
 } from 'electron';
+const fs = require('fs').promises;
 
 interface DarwinMenuItemConstructorOptions extends MenuItemConstructorOptions {
   selector?: string;
@@ -197,6 +199,21 @@ export default class MenuBuilder {
       {
         label: '&File',
         submenu: [
+          {
+            label: '&Open',
+            accelerator: 'Ctrl+O',
+            click: async () => {
+              const response = await dialog.showOpenDialog({properties: ['openFile'] });
+
+              if (response.canceled) {
+                return ;
+              }
+
+              const result = await fs.readFile(response.filePaths[0]);
+              this.mainWindow.webContents.send('load-file', result);
+            },
+          },
+          { type: 'separator' },
           {
             label: '&Close',
             accelerator: 'Ctrl+W',

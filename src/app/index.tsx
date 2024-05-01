@@ -6,7 +6,6 @@ import "./style.css";
 
 import { DockLayout, LayoutData } from 'rc-dock'
 
-import Minimon from "./machine";
 import Screen from "./screen";
 import Settings from "./settings";
 import Debugger from "./debugger";
@@ -27,10 +26,7 @@ const defaultSettings = {
   }
 }
 
-export async function getApp(store) {
-  const system = await Minimon.getMinimon();
-  system.running = true;
-
+export async function getApp(system, store) {
   function getStore(key) {
     return store.get(key) || defaultSettings[key];
   }
@@ -101,8 +97,6 @@ export async function getApp(store) {
     if (palette[last].offset < 1) {
       palette.push({ ... palette[last], offset: 1.0 });
     }
-
-    console.log(palette)
 
     system.clearColor = { ... palette[0] };
 
