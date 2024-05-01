@@ -26,7 +26,7 @@ class StreamAudioProcessor extends AudioWorkletProcessor {
         }
       }
 
-      channel[i] = this.working[this.queueSample++];
+      output[i] = this.working[this.queueSample++];
     }
 
     return true;

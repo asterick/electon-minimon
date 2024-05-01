@@ -33,14 +33,16 @@ export default function Debugger() {
         <ButtonGroup>
           <Button
             icon={running ? 'stop' : 'play'}
-            onClick={(e) => (context.system.running = !running)}
+            onClick={() => {
+              context.system.running = !running;
+            }}
           >
             {running ? 'Stop' : 'Play'}
           </Button>
-          <Button icon="reset" onClick={(e) => context.system.reset()}>
+          <Button icon="reset" onClick={() => context.system.reset()}>
             Reset
           </Button>
-          <Button icon="step-forward" onClick={(e) => context.system.step()}>
+          <Button icon="step-forward" onClick={() => context.system.step()}>
             Step
           </Button>
         </ButtonGroup>

@@ -225,11 +225,11 @@ export default class Screen extends Component {
       this.ref.current.height = height;
 
       if ((width * 2) / 3 > height) {
-        const fit_x = Math.floor((height * 3) / 2);
-        gl.viewport((width - fit_x) / 2, 0, fit_x, height);
+        const fitX = Math.floor((height * 3) / 2);
+        gl.viewport((width - fitX) / 2, 0, fitX, height);
       } else {
-        const fit_y = (width * 2) / 3;
-        gl.viewport(0, (height - fit_y) / 2, width, fit_y);
+        const fitY = (width * 2) / 3;
+        gl.viewport(0, (height - fitY) / 2, width, fitY);
       }
     }
 

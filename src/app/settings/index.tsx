@@ -19,7 +19,13 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 import { useContext, useState, useEffect } from 'react';
 import { GradientPicker } from 'react-linear-gradient-picker';
 import { SketchPicker } from 'react-color';
-import { Slider, HTMLSelect, FormGroup, ControlGroup } from '@blueprintjs/core';
+import {
+  Slider,
+  HTMLSelect,
+  FormGroup,
+  ControlGroup,
+  OptionProps,
+} from '@blueprintjs/core';
 
 import SystemContext from '../context';
 
@@ -85,20 +91,20 @@ export default function Settings() {
         />
       </FormGroup>
 
-      {blendingType == 'custom' && (
+      {blendingType === 'custom' && (
         <FormGroup label="Frame Weights">
           <ControlGroup>
-            {weights.map((v, i) => (
+            {weights.map((value, i) => (
               <Slider
                 key={i}
                 min={0.0}
                 max={1.0}
                 stepSize={0.01}
                 vertical
-                value={weights[i]}
-                onChange={(v) => {
+                value={value}
+                onChange={(newValue) => {
                   const newWeights = [...weights];
-                  newWeights[i] = v;
+                  newWeights[i] = newValue;
                   setWeights(newWeights);
                 }}
               />
@@ -107,13 +113,13 @@ export default function Settings() {
         </FormGroup>
       )}
 
-      {blendingType == 'true-gray' && (
+      {blendingType === 'true-gray' && (
         <FormGroup label="Blending Frames">
           <Slider min={2} max={8} onChange={setFrames} value={frames} />
         </FormGroup>
       )}
 
-      {blendingType == 'logorithmic' && (
+      {blendingType === 'logorithmic' && (
         <FormGroup label="Persistence">
           <Slider
             min={0.0}

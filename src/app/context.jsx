@@ -18,4 +18,4 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 import React from 'react';
 
-export default new React.createContext(null);
+export default React.createContext(null);
