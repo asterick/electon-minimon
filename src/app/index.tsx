@@ -102,6 +102,8 @@ export async function getApp(store) {
       palette.push({ ... palette[last], offset: 1.0 });
     }
 
+    console.log(palette)
+
     system.clearColor = { ... palette[0] };
 
     // Generate our gradient
@@ -110,15 +112,13 @@ export async function getApp(store) {
       const offset = i / 255.0;
       let next = palette[index+1];
       while (offset > next.offset) {
-        index++;
-        next = palette[index+1];
+        next = palette[++index+1];
       }
       const current = palette[index];
 
       let lo = current.offset;
       let hi = next.offset;
-      let weight = offset * (hi - lo) + lo;
-
+      let weight = (offset - lo) / (hi - lo);
 
       let r = next.r * weight + current.r * (1 - weight);
       let g = next.g * weight + current.g * (1 - weight);

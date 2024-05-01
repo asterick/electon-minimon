@@ -88,6 +88,7 @@ void LCD::clock(Machine::State &cpu, int osc3)
 
       const float range = hi - lo;
 
+      uint8_t color = 0;
       for (int i = LCD_WIDTH * LCD_HEIGHT; i; i--)
       {
         float weight = cpu.buffers.weights[*(lcd_shift++)] * range + lo;
