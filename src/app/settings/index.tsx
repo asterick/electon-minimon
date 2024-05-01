@@ -19,7 +19,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 import { useContext, useState, useEffect } from "react";
 import { GradientPicker } from 'react-linear-gradient-picker';
 import { SketchPicker } from 'react-color';
-import { Label, Slider, HTMLSelect, FormGroup, ControlGroup } from "@blueprintjs/core";
+import { Slider, HTMLSelect, FormGroup, ControlGroup } from "@blueprintjs/core";
 
 import SystemContext from "../context";
 
