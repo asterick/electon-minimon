@@ -5,9 +5,14 @@ class StreamAudioProcessor extends AudioWorkletProcessor {
         this.queue = null;
         this.working = null;
         this.sample = 0;
+        this.volume = 1.0;
 
         this.port.onmessage = (event) => {
+          if (typeof event === 'number') {
+            this.volume = event;
+          } else {
             this.queue = event.data;
+          }
         }
     }
 
@@ -29,7 +34,7 @@ class StreamAudioProcessor extends AudioWorkletProcessor {
                     }
                 }
 
-                channel[i++] = this.working[this.sample++];
+                channel[i++] = this.working[this.sample++] * this.volume;
 
                 if (this.sample >= this.working.length) {
                     this.working = null;

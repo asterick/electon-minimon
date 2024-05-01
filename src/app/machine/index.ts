@@ -37,7 +37,7 @@ const CPU_FREQ = 4000000;
 
 export default class Minimon extends EventTarget {
 	public state:Object | null;
-	private audio:Audio;
+	public audio:Audio;
 
 	private cpu_state:number;
 	private machineBytes:Uint8Array | null;

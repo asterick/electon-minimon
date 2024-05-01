@@ -15,8 +15,11 @@ import SystemContext from "./context";
 
 const defaultSettings = {
   settings: {
-    volume: 1.0,
-    stages: 8,
+    volume: 0.5,
+    frames: 8,
+    intensity: 0.5,
+    setBlendingType: "disabled",
+    weights: [ 1, 0, 0, 0, 0, 0, 0, 0 ],
     palette: [
       { offset: '0.00', color: '#B7CAB7' },
       { offset: '1.00', color: '#061806' }
@@ -57,6 +60,38 @@ export async function getApp(store) {
     const settings = getStore('settings');
     const palette = settings.palette.map((v) => ({ offset: Number(v.offset), ... parseColor(v.color)}));
     const last = palette.length - 1;
+    let frameCount = settings.frames;
+    let weights = [];
+
+    system.audio.setVolume(settings.volume);
+
+    // Calculate presets for weights
+    switch(settings.blendingType) {
+      case 'disabled':
+        frameCount = 1;
+      case 'true-gray':
+        for (let i = 0; i < 8; i++) weights[i] = (i < frameCount) ? 1.0 : 0.0;
+        break;
+      case 'logorithmic':
+        for (let i = 0, s = 1; i < 8; i++, s *= settings.intensity) weights[i] = s;
+        break ;
+      default:
+        weights = settings.weights;
+    }
+
+    // Calculate our blending ratios
+    const ratio = weights.reduce((a, b) => (a+b), 0) || 1.0;
+
+    // Clear weights
+    for (let i = 0; i < 0x100; i++) system.state.buffers.weights[i] = 0;
+
+    // Submit weights
+    for (let m = 0x80, b = 0; m; m >>= 1, b++) {
+      const scaledWeight = weights[b] / ratio;
+      for (let i = m; i < 0x100; i = (i + 1) | m) {
+        system.state.buffers.weights[i] += scaledWeight;
+      }
+    }
 
     // And cap stops
     if (palette[0].offset > 0) {

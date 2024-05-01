@@ -22,7 +22,7 @@ const audioContext = new AudioContext();
 const workletPromise = audioContext.audioWorklet.addModule(new URL('./audio.worklet.js', import.meta.url))
 
 export default class Audio {
-    private node:AudioWorkletNode | null;
+    private node:AudioWorkletNode?;
     private buffer:Float32Array;
     private writeIndex:number;
     private sample:number;
@@ -38,13 +38,17 @@ export default class Audio {
                 audioContext,
                 "stream-audio-processor",
             );
-    
+
             this.node.connect(audioContext.destination);
         });
     }
 
     get sampleRate() {
         return audioContext.sampleRate;
+    }
+
+    setVolume(volume:Number) {
+      this.node?.port.postMessage(volume)
     }
 
     push(samples:Float32Array) {

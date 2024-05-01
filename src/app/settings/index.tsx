@@ -19,7 +19,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 import { useContext, useState, useEffect } from "react";
 import { GradientPicker } from 'react-linear-gradient-picker';
 import { SketchPicker } from 'react-color';
-import { Label, Slider, HTMLSelect } from "@blueprintjs/core";
+import { Label, Slider, HTMLSelect, FormGroup, ControlGroup } from "@blueprintjs/core";
 
 import SystemContext from "../context";
 
@@ -35,22 +35,33 @@ const WrappedColorPicker = ({ onSelect, ...rest }) => {
   );
 }
 
+const blendingTypeValues: OptionProps<string>[] = [
+  { value: "disabled", label: "No Blending" },
+  { value: "logorithmic", label: "Realistic Ghosting" } ,
+  { value: "true-gray", label: "Pure gray" } ,
+  { value: "custom", label: "Custom Weights" },
+];
+
 export default function Settings() {
 	const context = useContext(SystemContext);
   const settings = context.store.get('settings');
 
   const [volume, setVolume] = useState(settings.volume);
-  const [stages, setStages] = useState(settings.stages);
+  const [frames, setFrames] = useState(settings.frames);
+  const [blendingType, setBlendingType] = useState(settings.blendingType);
+  const [weights, setWeights] = useState(settings.weights);
+  const [intensity, setIntensity] = useState(settings.intensity);
   const [palette, setPalette] = useState(settings.palette);
 
   useEffect(() => {
-    context.store.set('settings', { volume, stages, palette });
+    context.store.set('settings', {
+      volume, frames, blendingType, weights, intensity, palette
+    });
   });
 
   return (
     <div>
-      <Label>
-        System Volume
+      <FormGroup label="System Volume">
         <Slider
           min={0.0}
           max={1.0}
@@ -60,27 +71,65 @@ export default function Settings() {
           onChange={setVolume}
           value={volume}
           />
-      </Label>
+      </FormGroup>
 
-      <HTMLSelect
-          fill={true}
-          placeholder="Choose an item..."
-          iconName="caret-down"
-          options={["a", "b", "c"]}
-          onChange={(e) => console.log(e)}
-          />
+      <FormGroup>
+        <HTMLSelect
+            fill={true}
+            value={blendingType}
+            iconName="caret-down"
+            options={blendingTypeValues}
+            onChange={(e) => setBlendingType(e.target.value)}
+            />
+      </FormGroup>
 
-      <Label>
-        LCD Blending
+      {blendingType == "custom" &&
+      <FormGroup label="Frame Weights">
+        <ControlGroup>
+          {
+            weights.map((v, i) =>
+              <Slider
+                min={0.0}
+                max={1.0}
+                stepSize={0.01}
+                vertical={true}
+                value={weights[i]}
+                onChange={(v) => {
+                  let newWeights = [... weights];
+                  newWeights[i] = v;
+                  setWeights(newWeights);
+                }}
+                />
+            )
+          }
+        </ControlGroup>
+      </FormGroup>
+      }
+
+      {blendingType == "true-gray" &&
+      <FormGroup label="Blending Frames">
         <Slider
-          min={1}
+          min={2}
           max={8}
-          stepSize={1}
-          labelStepSize={1}
-          onChange={setStages}
-          value={stages}
+          onChange={setFrames}
+          value={frames}
           />
-      </Label>
+      </FormGroup>
+      }
+
+      {blendingType == "logorithmic" &&
+      <FormGroup label="Persistence">
+        <Slider
+          min={0.0}
+          max={1.0}
+          stepSize={0.01}
+          labelStepSize={0.2}
+          labelRenderer={(v) => `${Math.floor(v*100)}%`}
+          onChange={setIntensity}
+          value={intensity}
+          />
+      </FormGroup>
+      }
 
       <GradientPicker
         palette={palette}
