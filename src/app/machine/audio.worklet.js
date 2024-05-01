@@ -4,7 +4,7 @@ class StreamAudioProcessor extends AudioWorkletProcessor {
 
         this.queue = null;
         this.working = null;
-        this.sample = 0;
+        this.queueSample = 0;
 
         this.port.onmessage = (event) => {
           this.queue = event.data;
@@ -12,37 +12,24 @@ class StreamAudioProcessor extends AudioWorkletProcessor {
     }
 
     process(inputs, outputs, parameters) {
-        const output = outputs[0];
+      const output = outputs[0][0];
 
-        output.forEach((channel) => {
-            let i = 0;
+      for (let i = 0; i < output.length; i++) {
+        // Dequeue sample
+        if (this.working == null || this.working.length <= this.queueSample) {
+          this.working = this.queue;
+          this.queue = null;
+          this.queueSample = 0;
 
-            // Dequeue sample buffers
-            while (i < channel.length) {
-                if (this.working == null) {
-                    if (this.queue) {
-                        this.working = this.queue;
-                        this.sample = 0;
-                        this.queue = null;
-                    } else {
-                        break ;
-                    }
-                }
+          if (this.queue == null) {
+            break ;
+          }
+        }
 
-                channel[i++] = this.working[this.sample++];
+        channel[i] = this.working[this.queueSample++];
+      }
 
-                if (this.sample >= this.working.length) {
-                    this.working = null;
-                }
-            }
-
-            // Underflow
-            while (i < channel.length) {
-                channel[i++] = 0;
-            }
-        });
-
-        return true;
+      return true;
     }
 }
 
