@@ -248,8 +248,6 @@ static const StructDecl TimersState = {
         FIELD("osc3_prescale", Timers::State, osc3_prescale, TYPE_UINT32),
         {TYPE_END}}};
 
-// audio.output, AUDIO_BUFFER_LENGTH
-
 static const StructDecl MachineBuffers = {
     sizeof(Machine::Buffers),
     (const FieldDecl[]){

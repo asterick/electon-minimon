@@ -30,11 +30,10 @@ export default function Debugger () {
 
   return (
     <div className="toolbar">
-      <ButtonGroup fill={true}>
+      <ButtonGroup>
           <Button icon={running ? "stop" : "play"} onClick={(e) => context.system.running = !running}>{running ? "Stop" : "Play"}</Button>
           <Button icon="reset" onClick={(e) => context.system.reset()}>Reset</Button>
           <Button icon="step-forward" onClick={(e) => context.system.step()}>Step</Button>
-          <Button fill={true} disabled={true} />
         </ButtonGroup>
       </div>
   );

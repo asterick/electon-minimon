@@ -22,36 +22,33 @@ const audioContext = new AudioContext();
 const workletPromise = audioContext.audioWorklet.addModule(new URL('./audio.worklet.js', import.meta.url))
 
 export default class Audio {
-    private node:AudioWorkletNode?;
-    private buffer:Float32Array;
-    private writeIndex:number;
-    private sample:number;
+  private streamNode: AudioWorkletNode?;
+  private volNode: GainNode;
 
-    constructor() {
-        this.buffer = new Float32Array(BUFFER_LENGTH * 4);
-        this.writeIndex = 0;
-        this.sample = 0.0;
-        this.node = null;
+  constructor() {
+    this.volNode = audioContext.createGain();
+    this.volNode.connect(audioContext.destination);
 
-        workletPromise.then(() => {
-            this.node = new AudioWorkletNode(
-                audioContext,
-                "stream-audio-processor",
-            );
+    this.streamNode = null;
+    workletPromise.then(() => {
+      this.streamNode = new AudioWorkletNode(
+        audioContext,
+        "stream-audio-processor",
+      );
 
-            //this.node.connect(audioContext.destination);
-        });
-    }
+      this.streamNode.connect(this.volNode);
+    });
+  }
 
-    get sampleRate() {
-        return audioContext.sampleRate;
-    }
+  get sampleRate() {
+    return audioContext.sampleRate;
+  }
 
-    setVolume(volume:Number) {
-      this.node?.port.postMessage(volume)
-    }
+  setVolume(volume: Number) {
+    this.volNode.gain.value = volume;
+  }
 
-    push(samples:Float32Array) {
-        this.node?.port.postMessage(samples)
-    }
+  push(samples: Float32Array) {
+    this.streamNode?.port.postMessage(samples);
+  }
 }
