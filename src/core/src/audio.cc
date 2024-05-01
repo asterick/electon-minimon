@@ -78,7 +78,7 @@ void Audio::clock(Machine::State &state, int osc3)
 
     if (audio.write_index >= AUDIO_BUFFER_LENGTH)
     {
-      audio_push();
+      // audio_push();
       audio.write_index = 0;
     }
 
