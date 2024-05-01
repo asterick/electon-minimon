@@ -185,9 +185,6 @@ export default class Screen extends Component {
 
     this.animID = requestAnimationFrame(this.redraw);
 
-    gl.bindTexture(gl.TEXTURE_2D, this.tex);
-    gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, VRAM_WIDTH, VRAM_HEIGHT, gl.RGBA, gl.UNSIGNED_BYTE, this.context.system.state.buffers.framebuffer);
-
     if (width != this.ref.current.width || height != this.ref.current.height) {
       this.ref.current.width = width;
       this.ref.current.height = height;
@@ -199,10 +196,13 @@ export default class Screen extends Component {
         let fit_y = width * 2 / 3;
         gl.viewport(0, (height - fit_y) / 2, width, fit_y);
       }
-
-      gl.clearColor(this.context.system.clearColor.r, this.context.system.clearColor.g, this.context.system.clearColor.b, 1.0);
-      gl.clear(gl.COLOR_BUFFER_BIT);
     }
+
+    gl.bindTexture(gl.TEXTURE_2D, this.tex);
+    gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, VRAM_WIDTH, VRAM_HEIGHT, gl.RGBA, gl.UNSIGNED_BYTE, this.context.system.state.buffers.framebuffer);
+
+    gl.clearColor(this.context.system.clearColor.r, this.context.system.clearColor.g, this.context.system.clearColor.b, 1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
 
     gl.useProgram(this.program);
 
