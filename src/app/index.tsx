@@ -1,5 +1,5 @@
 import "normalize.css/normalize.css";
-import "rc-dock/dist/rc-dock.css";
+import "rc-dock/dist/rc-dock-dark.css";
 import "@blueprintjs/core/lib/css/blueprint.css";
 import "@blueprintjs/icons/lib/css/blueprint-icons.css";
 import "./style.css";
@@ -12,8 +12,20 @@ import Settings from "./settings";
 import Debugger from "./debugger";
 
 import SystemContext from "./context";
+import context from "./context";
 
-export async function getApp() {
+const defaultSettings = {
+  settings: {
+    volume: 1.0,
+    stages: 8,
+    palette: [
+      { offset: '0.00', color: '#B7CAB7' },
+      { offset: '1.00', color: '#061806' }
+    ]
+  }
+}
+
+export async function getApp(store) {
   const system = await Minimon.getMinimon();
   system.running = true;
 
@@ -32,20 +44,74 @@ export async function getApp() {
     }
   };
 
+  function getStore(key) {
+    return store.get(key) || defaultSettings[key];
+  }
+
+  function setStore(key, value) {
+    store.set(key, value);
+    rebuild();
+  }
+
+  function parseColor(v:String) {
+    const r = parseInt(v.substring(1,3), 16) / 255.0;
+    const g = parseInt(v.substring(3,5), 16) / 255.0;
+    const b = parseInt(v.substring(5,7), 16) / 255.0;
+
+    return { r, g, b };
+  }
+
+  function packColor(r:Number, g:Number, b:Number) {
+    return 0xFF000000 +
+      + Math.min(0xFF, Math.floor(r * 0x100))
+      + Math.min(0xFF, Math.floor(g * 0x100)) * 0x0100
+      + Math.min(0xFF, Math.floor(b * 0x100)) * 0x010000
+    ;
+  }
+
+  function rebuild() {
+    const settings = getStore('settings');
+    const palette = settings.palette.map((v) => ({ offset: Number(v.offset), ... parseColor(v.color)}));
+    const last = palette.length - 1;
+
+    // And cap stops
+    if (palette[0].offset > 0) {
+      palette.unshift({ ... palette[0], offset: 0.0 });
+    }
+
+    if (palette[last].offset < 1) {
+      palette.push({ ... palette[last], offset: 1.0 });
+    }
+
+    let index = 0;
+    for (let i = 0; i <= 0xFF; i++) {
+      const offset = i / 255.0;
+      let next = palette[index+1];
+      while (offset > next.offset) {
+        index++;
+        next = palette[index+1];
+      }
+      const current = palette[index];
+
+      let lo = current.offset;
+      let hi = next.offset;
+      let weight = offset * (hi - lo) + lo;
+
+
+      let r = next.r * weight + current.r * (1 - weight);
+      let g = next.g * weight + current.g * (1 - weight);
+      let b = next.b * weight + current.b * (1 - weight);
+
+      system.state.buffers.palette[i] = packColor(r,g,b);
+    }
+  }
+  rebuild();
+
   return (
-    <SystemContext.Provider value={system}>
-      <div className="pt-dark">
+    <SystemContext.Provider value={{system, store: { get: getStore, set: setStore }}}>
       <DockLayout
         defaultLayout={defaultLayout}
-        style={{
-          position: "absolute",
-          left: 0,
-          top: 0,
-          right: 0,
-          bottom: 0,
-        }}
         />
-        </div>
     </SystemContext.Provider>
   );
 }

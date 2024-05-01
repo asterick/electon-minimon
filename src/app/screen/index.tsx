@@ -31,7 +31,6 @@ const VRAM_HEIGHT = 64;
 export default class Screen extends Component {
 	static contextType = SystemContext;
 
-  private context:Minimon;
   private ref:React.RefObject<HTMLCanvasElement>;
   private ctx:WebGL2RenderingContext | null | undefined;
   private tex:WebGLTexture | null;
@@ -68,11 +67,11 @@ export default class Screen extends Component {
     this.init();
     this.redraw();
 
-    this.context.addEventListener("state:running", this.updateState);
+    this.context.system.addEventListener("state:running", this.updateState);
   }
 
 	componentWillUnmount() {
-    this.context.removeEventListener("state:running", this.updateState);
+    this.context.system.removeEventListener("state:running", this.updateState);
 
 		cancelAnimationFrame(this.animID);
 		this.ctx = null;
@@ -188,7 +187,7 @@ export default class Screen extends Component {
     this.animID = requestAnimationFrame(this.redraw);
 
     gl.bindTexture(gl.TEXTURE_2D, this.tex);
-    gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, VRAM_WIDTH, VRAM_HEIGHT, gl.RGBA, gl.UNSIGNED_BYTE, this.context.state.buffers.framebuffer);
+    gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, VRAM_WIDTH, VRAM_HEIGHT, gl.RGBA, gl.UNSIGNED_BYTE, this.context.system.state.buffers.framebuffer);
 
     if (width != this.ref.current.width || height != this.ref.current.height) {
       this.ref.current.width = width;

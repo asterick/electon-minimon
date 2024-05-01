@@ -6,6 +6,14 @@
   outline: none !important;
 }
 
+.dock-layout {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
 .dock-tabpane {
   box-sizing: border-box;
   padding: 4px 12px 4px;

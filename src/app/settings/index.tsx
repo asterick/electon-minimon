@@ -16,10 +16,10 @@ ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-import { useContext, useState } from "react";
+import { useContext, useState, useEffect } from "react";
 import { GradientPicker } from 'react-linear-gradient-picker';
 import { SketchPicker } from 'react-color';
-import { Label, Slider } from "@blueprintjs/core";
+import { Label, Slider, HTMLSelect } from "@blueprintjs/core";
 
 import SystemContext from "../context";
 
@@ -34,14 +34,18 @@ const WrappedColorPicker = ({ onSelect, ...rest }) => {
             />
   );
 }
+
 export default function Settings() {
 	const context = useContext(SystemContext);
-  const [volume, setVolume] = useState(1.0);
-  const [stages, setStages] = useState(8);
-  const [palette, setPalette] = useState([
-    { offset: '0.00', color: '#B7CAB7' },
-    { offset: '1.00', color: '#061806' }
-  ]);
+  const settings = context.store.get('settings');
+
+  const [volume, setVolume] = useState(settings.volume);
+  const [stages, setStages] = useState(settings.stages);
+  const [palette, setPalette] = useState(settings.palette);
+
+  useEffect(() => {
+    context.store.set('settings', { volume, stages, palette });
+  });
 
   return (
     <div>
@@ -57,6 +61,14 @@ export default function Settings() {
           value={volume}
           />
       </Label>
+
+      <HTMLSelect
+          fill={true}
+          placeholder="Choose an item..."
+          iconName="caret-down"
+          options={["a", "b", "c"]}
+          onChange={(e) => console.log(e)}
+          />
 
       <Label>
         LCD Blending
