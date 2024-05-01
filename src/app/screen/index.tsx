@@ -18,8 +18,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 import './style.css';
 
-import { createRef, Component } from 'react';
-import Minimon from '../system';
+import { useRef, useContext, useEffect } from 'react';
 import SystemContext from '../context';
 
 import VertexShader from './shaders/vertex.glsl';
@@ -28,85 +27,25 @@ import FragmentShader from './shaders/fragment.glsl';
 const VRAM_WIDTH = 96;
 const VRAM_HEIGHT = 64;
 
-export default class Screen extends Component {
-  static contextType = SystemContext;
+export default function Screen() {
+  const context = useContext(SystemContext);
+  const canvasRef = useRef(null);
+  const glRef = useRef(null);
 
-  private ref: React.RefObject<HTMLCanvasElement>;
+  let tex: WebGLTexture | null = null;
+  let verts: WebGLBuffer | null = null;
+  let program: WebGLProgram | null = null;
+  let attributes = {};
+  let uniforms = {};
+  let animID: number = 0;
 
-  private ctx: WebGL2RenderingContext | null | undefined;
-
-  private tex: WebGLTexture | null;
-
-  private verts: WebGLBuffer | null;
-
-  private program: WebGLProgram | null;
-
-  private attributes;
-
-  private uniforms;
-
-  private contrast: number;
-
-  private animID: number;
-
-  constructor(props) {
-    super(props);
-
-    this.ref = createRef();
-    this.ctx = null;
-    this.tex = null;
-
-    this.verts = null;
-    this.attributes = {};
-    this.uniforms = {};
-    this.program = null;
-    this.animID = 0;
-
-    this.contrast = 0.5;
-  }
-
-  componentDidMount() {
-    this.ctx = this.ref.current?.getContext('webgl2', {
+  function init() {
+    const gl = canvasRef.current?.getContext('webgl2', {
       preserveDrawingBuffer: true,
       alpha: false,
     });
 
-    this.init();
-    this.redraw();
-
-    this.context.system.addEventListener('state:running', this.updateState);
-  }
-
-  componentWillUnmount() {
-    this.context.system.removeEventListener('state:running', this.updateState);
-
-    cancelAnimationFrame(this.animID);
-    this.ctx = null;
-    this.animID = 0;
-  }
-
-  onDragOver(e) {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'copy';
-  }
-
-  onDragLeave() {}
-
-  onDrop(e) {
-    e.preventDefault();
-
-    const file = e.dataTransfer.files[0];
-    const reader = new FileReader();
-
-    reader.onload = (e) => {
-      this.context.system.load(e.target.result);
-    };
-
-    reader.readAsArrayBuffer(file);
-  }
-
-  init() {
-    const gl = this.ctx;
+    glRef.current = gl;
 
     if (!gl) return;
 
@@ -126,7 +65,7 @@ export default class Screen extends Component {
 
     if (!gl.getShaderParameter(vertexShader, gl.COMPILE_STATUS)) {
       console.error(gl.getShaderInfoLog(vertexShader));
-      return null;
+      return;
     }
 
     const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
@@ -135,40 +74,37 @@ export default class Screen extends Component {
 
     if (!gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS)) {
       console.error(gl.getShaderInfoLog(fragmentShader));
-      return null;
+      return;
     }
 
-    this.program = gl.createProgram();
-    gl.attachShader(this.program, vertexShader);
-    gl.attachShader(this.program, fragmentShader);
-    gl.linkProgram(this.program);
+    program = gl.createProgram();
+    gl.attachShader(program, vertexShader);
+    gl.attachShader(program, fragmentShader);
+    gl.linkProgram(program);
 
-    if (!gl.getProgramParameter(this.program, gl.LINK_STATUS)) {
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
       console.error(gl.getError());
-      return null;
+      return;
     }
 
-    const attrCount = gl.getProgramParameter(
-      this.program,
-      gl.ACTIVE_ATTRIBUTES,
-    );
-    this.attributes = {};
+    const attrCount = gl.getProgramParameter(program, gl.ACTIVE_ATTRIBUTES);
+    attributes = {};
 
-    for (var i = 0; i < attrCount; i++) {
-      const attr = gl.getActiveAttrib(this.program, i);
-      this.attributes[attr.name] = i;
+    for (let i = 0; i < attrCount; i++) {
+      const attr = gl.getActiveAttrib(program, i);
+      attributes[attr.name] = i;
     }
 
-    const uniCount = gl.getProgramParameter(this.program, gl.ACTIVE_UNIFORMS);
-    this.uniforms = {};
+    const uniCount = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS);
+    uniforms = {};
 
-    for (var i = 0; i < uniCount; i++) {
-      const uni = gl.getActiveUniform(this.program, i);
-      this.uniforms[uni.name] = gl.getUniformLocation(this.program, uni.name);
+    for (let i = 0; i < uniCount; i++) {
+      const uni = gl.getActiveUniform(program, i);
+      uniforms[uni.name] = gl.getUniformLocation(program, uni.name);
     }
 
-    this.verts = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.verts);
+    verts = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, verts);
     gl.bufferData(
       gl.ARRAY_BUFFER,
       new Float32Array([
@@ -192,8 +128,8 @@ export default class Screen extends Component {
       gl.STATIC_DRAW,
     );
 
-    this.tex = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, this.tex);
+    tex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, tex);
     gl.texImage2D(
       gl.TEXTURE_2D,
       0,
@@ -209,20 +145,20 @@ export default class Screen extends Component {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
   }
 
-  updateState = (e) => {
-    this.setState({ running: e.detail });
-  };
+  function redraw() {
+    const gl = glRef.current;
 
-  private redraw = () => {
-    const gl = this.ctx;
-    const width = this.ref.current.clientWidth;
-    const height = this.ref.current.clientHeight;
+    const width = canvasRef.current.clientWidth;
+    const height = canvasRef.current.clientHeight;
 
-    this.animID = requestAnimationFrame(this.redraw);
+    animID = requestAnimationFrame(redraw);
 
-    if (width != this.ref.current.width || height != this.ref.current.height) {
-      this.ref.current.width = width;
-      this.ref.current.height = height;
+    if (
+      width !== canvasRef.current.width ||
+      height !== canvasRef.current.height
+    ) {
+      canvasRef.current.width = width;
+      canvasRef.current.height = height;
 
       if ((width * 2) / 3 > height) {
         const fitX = Math.floor((height * 3) / 2);
@@ -233,7 +169,7 @@ export default class Screen extends Component {
       }
     }
 
-    gl.bindTexture(gl.TEXTURE_2D, this.tex);
+    gl.bindTexture(gl.TEXTURE_2D, tex);
     gl.texSubImage2D(
       gl.TEXTURE_2D,
       0,
@@ -243,40 +179,64 @@ export default class Screen extends Component {
       VRAM_HEIGHT,
       gl.RGBA,
       gl.UNSIGNED_BYTE,
-      this.context.system.state.buffers.framebuffer,
+      context.system.state.buffers.framebuffer,
     );
 
     gl.clearColor(
-      this.context.system.clearColor.r,
-      this.context.system.clearColor.g,
-      this.context.system.clearColor.b,
+      context.system.clearColor.r,
+      context.system.clearColor.g,
+      context.system.clearColor.b,
       1.0,
     );
     gl.clear(gl.COLOR_BUFFER_BIT);
 
-    gl.useProgram(this.program);
+    gl.useProgram(program);
 
     gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, this.tex);
+    gl.bindTexture(gl.TEXTURE_2D, tex);
 
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.verts);
-    gl.enableVertexAttribArray(this.attributes.position);
-    gl.enableVertexAttribArray(this.attributes.uv);
-    gl.vertexAttribPointer(this.attributes.position, 2, gl.FLOAT, false, 16, 0);
-    gl.vertexAttribPointer(this.attributes.uv, 2, gl.FLOAT, false, 16, 8);
+    gl.bindBuffer(gl.ARRAY_BUFFER, verts);
+    gl.enableVertexAttribArray(attributes.position);
+    gl.enableVertexAttribArray(attributes.uv);
+    gl.vertexAttribPointer(attributes.position, 2, gl.FLOAT, false, 16, 0);
+    gl.vertexAttribPointer(attributes.uv, 2, gl.FLOAT, false, 16, 8);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-  };
-
-  render() {
-    return (
-      <div
-        className="screen"
-        onDragOver={(e) => this.onDragOver(e)}
-        onDragLeave={(e) => this.onDragLeave(e)}
-        onDrop={(e) => this.onDrop(e)}
-      >
-        <canvas ref={this.ref} />
-      </div>
-    );
   }
+
+  useEffect(() => {
+    if (glRef.current == null) {
+      init();
+    }
+    redraw();
+
+    return () => {
+      cancelAnimationFrame(animID);
+      glRef.current = null;
+      animID = 0;
+    };
+  });
+
+  function onDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+  }
+
+  function onDrop(e) {
+    e.preventDefault();
+
+    const file = e.dataTransfer.files[0];
+    const reader = new FileReader();
+
+    reader.onload = (loadEvt) => {
+      context.system.load(loadEvt.target?.result);
+    };
+
+    reader.readAsArrayBuffer(file);
+  }
+
+  return (
+    <div className="screen" onDragOver={onDragOver} onDrop={onDrop}>
+      <canvas ref={canvasRef} />
+    </div>
+  );
 }

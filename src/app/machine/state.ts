@@ -100,7 +100,7 @@ function array(buffer, offset, type, my_def, elements, ...size) {
   let stride = size.reduce((a, b) => size, 1);
 
   // Offset based on element size
-  if (type == TYPE_STRUCT) {
+  if (type === TYPE_STRUCT) {
     stride *= dv.getUint32(my_def, true);
   } else {
     stride *= SIZES[type];
@@ -114,7 +114,7 @@ function array(buffer, offset, type, my_def, elements, ...size) {
     }
     return out;
   }
-  if (type == TYPE_STRUCT) {
+  if (type === TYPE_STRUCT) {
     const out = new Array(elements);
     for (let i = 0; i < elements; i++) {
       out[i] = struct(buffer, my_def, offset + stride * i);
@@ -135,7 +135,7 @@ export function struct(buffer, my_def, offset) {
   for (;;) {
     const type = dv.getUint32(fields, true);
 
-    if (type == TYPE_END) break;
+    if (type === TYPE_END) break;
 
     const name = utf8(dv, fields + 4);
 
@@ -148,7 +148,7 @@ export function struct(buffer, my_def, offset) {
         enumerable: true,
         value: array(buffer, target + offset, type, def, ...size),
       });
-    } else if (type == TYPE_STRUCT) {
+    } else if (type === TYPE_STRUCT) {
       Object.defineProperty(out, name, {
         enumerable: true,
         value: struct(buffer, def, target + offset),
