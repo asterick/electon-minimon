@@ -1,0 +1,37 @@
+#debugger {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+
+  .toolbar {
+    flex: 0 0 auto;
+  }
+
+  .body {
+    display: flex;
+    flex: 1 0 auto;
+    flex-direction: row;
+  }
+
+  .disassembly {
+    display: flex;
+    flex: 1 0 auto;
+  }
+
+  .info {
+    display: flex;
+    flex: 0 0 auto;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .registers {
+    display: flex;
+    flex: 0 0 auto;
+  }
+
+  .stack {
+    display: flex;
+    flex: 1 0 auto;
+  }
+}

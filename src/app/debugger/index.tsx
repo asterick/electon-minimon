@@ -28,13 +28,20 @@ export default function Debugger () {
     }
   });
 
-  return (
+  return <>
     <div className="toolbar">
       <ButtonGroup>
-          <Button icon={running ? "stop" : "play"} onClick={(e) => context.system.running = !running}>{running ? "Stop" : "Play"}</Button>
-          <Button icon="reset" onClick={(e) => context.system.reset()}>Reset</Button>
-          <Button icon="step-forward" onClick={(e) => context.system.step()}>Step</Button>
-        </ButtonGroup>
+        <Button icon={running ? "stop" : "play"} onClick={(e) => context.system.running = !running}>{running ? "Stop" : "Play"}</Button>
+        <Button icon="reset" onClick={(e) => context.system.reset()}>Reset</Button>
+        <Button icon="step-forward" onClick={(e) => context.system.step()}>Step</Button>
+      </ButtonGroup>
+    </div>
+    <div className="body">
+      <div className="disassembly">asdf</div>
+      <div className="info">
+        <div className="registers">asdf</div>
+        <div className="stack">asdf</div>
       </div>
-  );
+    </div>
+  </>;
 }

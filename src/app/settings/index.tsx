@@ -59,84 +59,82 @@ export default function Settings() {
     });
   });
 
-  return (
-    <div>
-      <FormGroup label="System Volume">
-        <Slider
-          min={0.0}
-          max={1.0}
-          stepSize={0.01}
-          labelStepSize={0.2}
-          labelRenderer={(v) => `${Math.floor(v*100)}%`}
-          onChange={setVolume}
-          value={volume}
+  return <>
+    <FormGroup label="System Volume">
+      <Slider
+        min={0.0}
+        max={1.0}
+        stepSize={0.01}
+        labelStepSize={0.2}
+        labelRenderer={(v) => `${Math.floor(v*100)}%`}
+        onChange={setVolume}
+        value={volume}
+        />
+    </FormGroup>
+
+    <FormGroup>
+      <HTMLSelect
+          fill={true}
+          value={blendingType}
+          iconName="caret-down"
+          options={blendingTypeValues}
+          onChange={(e) => setBlendingType(e.target.value)}
           />
-      </FormGroup>
+    </FormGroup>
 
-      <FormGroup>
-        <HTMLSelect
-            fill={true}
-            value={blendingType}
-            iconName="caret-down"
-            options={blendingTypeValues}
-            onChange={(e) => setBlendingType(e.target.value)}
-            />
-      </FormGroup>
+    {blendingType == "custom" &&
+    <FormGroup label="Frame Weights">
+      <ControlGroup>
+        {
+          weights.map((v, i) =>
+            <Slider
+              key={i}
+              min={0.0}
+              max={1.0}
+              stepSize={0.01}
+              vertical={true}
+              value={weights[i]}
+              onChange={(v) => {
+                let newWeights = [... weights];
+                newWeights[i] = v;
+                setWeights(newWeights);
+              }}
+              />
+          )
+        }
+      </ControlGroup>
+    </FormGroup>
+    }
 
-      {blendingType == "custom" &&
-      <FormGroup label="Frame Weights">
-        <ControlGroup>
-          {
-            weights.map((v, i) =>
-              <Slider
-                key={i}
-                min={0.0}
-                max={1.0}
-                stepSize={0.01}
-                vertical={true}
-                value={weights[i]}
-                onChange={(v) => {
-                  let newWeights = [... weights];
-                  newWeights[i] = v;
-                  setWeights(newWeights);
-                }}
-                />
-            )
-          }
-        </ControlGroup>
-      </FormGroup>
-      }
+    {blendingType == "true-gray" &&
+    <FormGroup label="Blending Frames">
+      <Slider
+        min={2}
+        max={8}
+        onChange={setFrames}
+        value={frames}
+        />
+    </FormGroup>
+    }
 
-      {blendingType == "true-gray" &&
-      <FormGroup label="Blending Frames">
-        <Slider
-          min={2}
-          max={8}
-          onChange={setFrames}
-          value={frames}
-          />
-      </FormGroup>
-      }
+    {blendingType == "logorithmic" &&
+    <FormGroup label="Persistence">
+      <Slider
+        min={0.0}
+        max={1.0}
+        stepSize={0.01}
+        labelStepSize={0.2}
+        labelRenderer={(v) => `${Math.floor(v*100)}%`}
+        onChange={setIntensity}
+        value={intensity}
+        />
+    </FormGroup>
+    }
 
-      {blendingType == "logorithmic" &&
-      <FormGroup label="Persistence">
-        <Slider
-          min={0.0}
-          max={1.0}
-          stepSize={0.01}
-          labelStepSize={0.2}
-          labelRenderer={(v) => `${Math.floor(v*100)}%`}
-          onChange={setIntensity}
-          value={intensity}
-          />
-      </FormGroup>
-      }
-
-      <GradientPicker
-        palette={palette}
-        onPaletteChange={setPalette} >
-        <WrappedColorPicker />
-      </GradientPicker>
-    </div>
-  );
+    <GradientPicker
+      palette={palette}
+      onPaletteChange={setPalette} >
+      <WrappedColorPicker />
+    </GradientPicker>
+  </>;
 }

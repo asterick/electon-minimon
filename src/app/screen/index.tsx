@@ -218,13 +218,13 @@ export default class Screen extends Component {
   }
 
 	render() {
-		return (
+		return <>
       <div className="screen"
         onDragOver={(e) => this.onDragOver(e)}
         onDragLeave={(e) => this.onDragLeave(e)}
         onDrop={(e) => this.onDrop(e)}>
         <canvas ref={this.ref}/>
       </div>
-		);
+    </>;
 	}
 }
