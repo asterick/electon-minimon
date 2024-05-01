@@ -89,6 +89,7 @@ export default function Settings() {
           {
             weights.map((v, i) =>
               <Slider
+                key={i}
                 min={0.0}
                 max={1.0}
                 stepSize={0.01}
