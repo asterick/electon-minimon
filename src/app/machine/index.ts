@@ -35,24 +35,47 @@ const KEYBOARD_CODES = {
 const INPUT_CART_N = 0b1000000000;
 const CPU_FREQ = 4000000;
 
+function BIT(n:number) {
+  return 1 << n;
+}
+
+enum TraceAccess {
+  // Category: Access Type
+  TRACE_WORD_LO = BIT(0),
+  TRACE_WORD_HI = BIT(1),
+  TRACE_DATA = BIT(2),
+  TRACE_INSTRUCTION = BIT(3),
+  TRACE_EX_INST = BIT(4),
+  TRACE_IMMEDIATE = BIT(5),
+  TRACE_STACK = BIT(6),
+
+  // Category: Argument type
+  TRACE_VECTOR = BIT(10),
+  TRACE_BRANCH_TARGET = BIT(11),
+  TRACE_OFFSET = BIT(12),
+
+  // Category: Data type
+  TRACE_TILE_DATA = BIT(20),
+  TRACE_SPRITE_DATA = BIT(21),
+  TRACE_RETURN_ADDRESS = BIT(22),
+
+  // Category: Access direction
+  TRACE_READ = BIT(30),
+  TRACE_WRITE = BIT(31),
+}
+
 export default class Minimon extends EventTarget {
   public state: Object | null;
-
   public audio: Audio;
-
   private cpu_state: number;
-
   private machineBytes: Uint8Array | null;
-
-  private exports;
-
-  private runTimer;
-
   private systemTime: number;
-
   private breakpoints: Array<number>;
-
   private inputState: number;
+  private tracedAccess: Uint32Array;
+  private traceBankUpdate: Object;
+  private exports;
+  private runTimer;
 
   public clearColor = { r: 1, g: 1, b: 1 };
 
@@ -67,6 +90,9 @@ export default class Minimon extends EventTarget {
     this.machineBytes = null;
     this.state = null;
     this.systemTime = Date.now();
+
+    this.tracedAccess = new Uint32Array(0x200000);
+    this.traceBankUpdate = {};
 
     document.body.addEventListener('keydown', (e: KeyboardEvent) => {
       this.inputState &= ~(KEYBOARD_CODES[e.keyCode] || 0);
@@ -156,7 +182,10 @@ export default class Minimon extends EventTarget {
   };
 
   update() {
+    this.dispatchEvent(new CustomEvent('update:trace', { banks: this.traceBankUpdate }))
     this.dispatchEvent(new CustomEvent('update:state', { detail: this.state }));
+
+    this.traceBankUpdate = {};
   }
 
   private updateInput() {
@@ -237,6 +266,7 @@ export default class Minimon extends EventTarget {
   }
 
   eject() {
+    this.tracedAccess = new Uint32Array(0x200000);
     this.inputState |= INPUT_CART_N;
     this.updateInput();
   }
@@ -254,12 +284,23 @@ export default class Minimon extends EventTarget {
     );
   };
 
-  trace_access = (
-    cpu: number,
-    address: number,
-    kind: number,
-    data: number,
-  ) => {};
+  trace_access = (cpu: number, address: number, kind: number, data: number) => {
+    const prev = this.tracedAccess[address];
+    let curr = prev;
+
+    if (kind & TRACE_WRITE) {
+      if (address <= 0x20FF) {
+        curr = this.tracedAccess[address] = kind;
+      } else {
+        return ;
+      }
+      curr = this.tracedAccess[address] |= kind;
+    }
+
+    if (prev !== curr) {
+      this.traceBankUpdate[address >> 15] = true;
+    }
+  };
 
   // WASM shim functions
   translate(address: number) {
