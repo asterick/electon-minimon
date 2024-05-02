@@ -20,7 +20,6 @@ import { useContext, useState, useEffect } from 'react';
 import { GradientPicker } from 'react-linear-gradient-picker';
 import { SketchPicker } from 'react-color';
 import {
-  Switch,
   Slider,
   HTMLSelect,
   FormGroup,
@@ -46,31 +45,45 @@ const blendingTypeValues: OptionProps<string>[] = [
   { value: 'custom', label: 'Custom Weights' },
 ];
 
+const darkModeValues: OptionProps<string>[] = [
+  { value: "system", label: "System theme" },
+  { value: true, label: "Dark Mode" },
+  { value: false, label: "Light Mode" },
+];
+
 export default function Settings() {
   const context = useContext(SystemContext);
-  const settings = context.store.get('settings');
 
-  const [volume, setVolume] = useState(settings.volume);
-  const [frames, setFrames] = useState(settings.frames);
-  const [blendingType, setBlendingType] = useState(settings.blendingType);
-  const [weights, setWeights] = useState(settings.weights);
-  const [intensity, setIntensity] = useState(settings.intensity);
-  const [palette, setPalette] = useState(settings.palette);
+  const [volume, setVolume] = useState(context.store.get('volume'));
+  const [frames, setFrames] = useState(context.store.get('frames'));
+  const [blendingType, setBlendingType] = useState(context.store.get('blendingType'));
+  const [weights, setWeights] = useState(context.store.get('weights'));
+  const [intensity, setIntensity] = useState(context.store.get('intensity'));
+  const [palette, setPalette] = useState(context.store.get('palette'));
+  const [darkMode, setDarkMode] = useState(context.store.get('darkMode'));
 
   useEffect(() => {
-    context.store.set('settings', {
-      volume,
-      frames,
-      blendingType,
-      weights,
-      intensity,
-      palette,
-    });
+    context.store.set('volume',volume);
+    context.store.set('frames',frames);
+    context.store.set('blendingType',blendingType);
+    context.store.set('weights',weights);
+    context.store.set('intensity',palette);
+    context.store.set('palette',palette);
+    context.store.set('darkMode',darkMode);
   });
 
   return (
     <>
-      <Switch label="Dark Mode" />
+      <FormGroup label="Theme">
+        <HTMLSelect
+            fill
+            value={darkMode}
+            iconName="caret-down"
+            options={darkModeValues}
+            onChange={(e) => setDarkMode(e.target.value)}
+            />
+      </FormGroup>
+
       <FormGroup label="System Volume">
         <Slider
           min={0.0}
@@ -90,7 +103,7 @@ export default function Settings() {
           iconName="caret-down"
           options={blendingTypeValues}
           onChange={(e) => setBlendingType(e.target.value)}
-        />
+          />
       </FormGroup>
 
       {blendingType === 'custom' && (

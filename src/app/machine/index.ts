@@ -163,6 +163,63 @@ export default class Minimon extends EventTarget {
     this.exports.update_inputs(this.cpu_state, this.inputState);
   }
 
+  // Colorization
+  setPalette(palette) {
+    const last = palette.length - 1;
+
+    // And cap stops
+    if (palette[0].offset > 0) {
+      palette.unshift({ ...palette[0], offset: 0.0 });
+    }
+
+    if (palette[last].offset < 1) {
+      palette.push({ ...palette[last], offset: 1.0 });
+    }
+
+    // Generate our gradient
+    this.clearColor = { ... palette[0] };
+    let index = 0;
+    for (let i = 0; i <= 0xff; i++) {
+      const offset = i / 255.0;
+      let next = palette[index + 1];
+      while (offset > next.offset) {
+        next = palette[++index + 1];
+      }
+      const current = palette[index];
+
+      const lo = current.offset;
+      const hi = next.offset;
+      const weight = (offset - lo) / (hi - lo);
+
+      const r = next.r * weight + current.r * (1 - weight);
+      const g = next.g * weight + current.g * (1 - weight);
+      const b = next.b * weight + current.b * (1 - weight);
+
+      this.state.buffers.palette[i] = (
+        0xff000000 +
+        +Math.min(0xff, Math.floor(r * 0x100)) +
+        Math.min(0xff, Math.floor(g * 0x100)) * 0x0100 +
+        Math.min(0xff, Math.floor(b * 0x100)) * 0x010000
+      );
+    }
+  }
+
+  setBlendWeights(weights) {
+    // Calculate our blending ratios
+    const ratio = weights.reduce((a, b) => a + b, 0) || 1.0;
+
+    // Clear weights
+    for (let i = 0; i < 0x100; i++) this.state.buffers.weights[i] = 0;
+
+    // Submit weights
+    for (let m = 0x80, b = 0; m; m >>= 1, b++) {
+      const scaledWeight = weights[b] / ratio;
+      for (let i = m; i < 0x100; i = (i + 1) | m) {
+        this.state.buffers.weights[i] += scaledWeight;
+      }
+    }
+  }
+
   // Cartridge I/O
   load(ab) {
     const bytes = new Uint8Array(ab);
