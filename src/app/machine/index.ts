@@ -39,29 +39,29 @@ function BIT(n:number) {
   return 1 << n;
 }
 
-enum TraceAccess {
+export enum TraceAccess {
   // Category: Access Type
-  TRACE_WORD_LO = BIT(0),
-  TRACE_WORD_HI = BIT(1),
-  TRACE_DATA = BIT(2),
-  TRACE_INSTRUCTION = BIT(3),
-  TRACE_EX_INST = BIT(4),
-  TRACE_IMMEDIATE = BIT(5),
-  TRACE_STACK = BIT(6),
+  WORD_LO = BIT(0),
+  WORD_HI = BIT(1),
+  DATA = BIT(2),
+  INSTRUCTION = BIT(3),
+  EX_INST = BIT(4),
+  IMMEDIATE = BIT(5),
+  STACK = BIT(6),
 
   // Category: Argument type
-  TRACE_VECTOR = BIT(10),
-  TRACE_BRANCH_TARGET = BIT(11),
-  TRACE_OFFSET = BIT(12),
+  VECTOR = BIT(10),
+  BRANCH_TARGET = BIT(11),
+  OFFSET = BIT(12),
 
   // Category: Data type
-  TRACE_TILE_DATA = BIT(20),
-  TRACE_SPRITE_DATA = BIT(21),
-  TRACE_RETURN_ADDRESS = BIT(22),
+  TILE_DATA = BIT(20),
+  SPRITE_DATA = BIT(21),
+  RETURN_ADDRESS = BIT(22),
 
   // Category: Access direction
-  TRACE_READ = BIT(30),
-  TRACE_WRITE = BIT(31),
+  READ = BIT(30),
+  WRITE = BIT(31),
 }
 
 export default class Minimon extends EventTarget {
@@ -286,19 +286,32 @@ export default class Minimon extends EventTarget {
 
   trace_access = (cpu: number, address: number, kind: number, data: number) => {
     const prev = this.tracedAccess[address];
-    let curr = prev;
 
-    if (kind & TRACE_WRITE) {
-      if (address <= 0x20FF) {
-        curr = this.tracedAccess[address] = kind;
-      } else {
-        return ;
-      }
-      curr = this.tracedAccess[address] |= kind;
+    // We do not need to trace register writes
+    if (address >= 0x2000 && address <= 0x20FF) {
+      return ;
     }
 
-    if (prev !== curr) {
-      this.traceBankUpdate[address >> 15] = true;
+    // Trace accesses, with clear on write to ram
+    if (kind & TraceAccess.WRITE) {
+      if (address >= 0x2100) {
+        return ;
+      }
+
+      this.tracedAccess[address] = kind;
+    } else {
+      this.tracedAccess[address] |= kind;
+    }
+
+    // Mark altered banks as dirty
+    if (prev !== this.tracedAccess[address]) {
+      let bank = address >> 15;
+      if (address < 0x1000) {
+        bank = "bios";
+      } else if (address < 0x2000) {
+        bank = "ram";
+      }
+      this.traceBankUpdate[bank] = true;
     }
   };
 
