@@ -12,8 +12,8 @@ const defaultSettings = {
   darkMode: null,
   volume: 0.5,
   frames: 8,
-  intensity: 0.5,
-  setBlendingType: 'disabled',
+  intensity: 0.80,
+  setBlendingType: 'logorithmic',
   weights: [1, 0, 0, 0, 0, 0, 0, 0],
   palette: [
     { offset: '0.00', color: '#B7CAB7' },
@@ -140,7 +140,7 @@ export function App({ store, system }) {
       value={{ system, store: { get: getStore, set: setStore } }}>
       <DockviewReact
         className={((darkMode === "system") ? systemDarkMode : (darkMode === "true")) ?
-          "bp5-dark dockview-theme-abyss root-container" : "dockview-theme-light root-container"}
+          "bp5-dark dockview-theme-dark root-container" : "dockview-theme-light root-container"}
         components={components}
         onReady={onReady} />
     </SystemContext.Provider>

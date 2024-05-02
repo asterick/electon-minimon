@@ -20,6 +20,7 @@ import { useContext, useState, useEffect } from 'react';
 import { GradientPicker } from 'react-linear-gradient-picker';
 import { SketchPicker } from 'react-color';
 import {
+  Button,
   Slider,
   HTMLSelect,
   FormGroup,
@@ -66,11 +67,36 @@ export default function Settings() {
     context.store.set('darkMode',darkMode);
   });
 
+  function resetDefaults () {
+    context.store.set('volume', null);
+    context.store.set('frames', null);
+    context.store.set('blendingType', null);
+    context.store.set('weights', null);
+    context.store.set('intensity',  null);
+    context.store.set('palette', null);
+    context.store.set('darkMode', null);
+
+    setVolume(context.store.get('volume'));
+    setFrames(context.store.get('frames'));
+    setBlendingType(context.store.get('blendingType'));
+    setWeights(context.store.get('weights'));
+    setIntensity(context.store.get('intensity'));
+    setPalette(context.store.get('palette'));
+    setDarkMode(context.store.get('darkMode'));
+  };
+
+
   const WrappedColorPicker = ({ onSelect, ...rest }) =>
     <SketchPicker {...rest} disableAlpha onChange={(c) => onSelect(c.hex)} />
 
   return (
     <div className="settings">
+      <FormGroup>
+        <ControlGroup fill={true}>
+          <Button onClick={resetDefaults}>Reset to Default</Button>
+        </ControlGroup>
+      </FormGroup>
+
       <FormGroup label="Theme">
         <HTMLSelect
             fill
@@ -149,6 +175,7 @@ export default function Settings() {
       <GradientPicker palette={palette} onPaletteChange={setPalette}>
         <WrappedColorPicker />
       </GradientPicker>
+
     </div>
   );
 }
