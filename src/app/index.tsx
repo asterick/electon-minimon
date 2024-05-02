@@ -135,21 +135,12 @@ export function App({ store, system }) {
     window.electron.ipcRenderer.on('open-view', addPanel);
   }
 
-  let dark = systemDarkMode;
-  switch (darkMode) {
-    case "true":
-      dark = true;
-      break ;
-    case "false":
-      dark = false;
-      break ;
-  }
-
   return (
     <SystemContext.Provider
       value={{ system, store: { get: getStore, set: setStore } }}>
       <DockviewReact
-        className={dark ? "bp5-dark dockview-theme-abyss root-container" : "dockview-theme-light root-container"}
+        className={((darkMode === "system") ? systemDarkMode : (darkMode === "true")) ?
+          "bp5-dark dockview-theme-abyss root-container" : "dockview-theme-light root-container"}
         components={components}
         onReady={onReady} />
     </SystemContext.Provider>

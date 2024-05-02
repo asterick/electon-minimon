@@ -28,7 +28,7 @@ export default function Debugger() {
   });
 
   return (
-    <>
+    <div className="debugger">
       <div className="toolbar">
         <ButtonGroup>
           <Button
@@ -54,6 +54,6 @@ export default function Debugger() {
           <div className="stack">asdf</div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

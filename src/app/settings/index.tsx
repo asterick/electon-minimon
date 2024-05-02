@@ -32,12 +32,6 @@ import SystemContext from '../context';
 import 'react-linear-gradient-picker/dist/index.css';
 import './index.css';
 
-function WrappedColorPicker({ onSelect, ...rest }) {
-  return (
-    <SketchPicker {...rest} disableAlpha onChange={(c) => onSelect(c.hex)} />
-  );
-}
-
 const blendingTypeValues: OptionProps<string>[] = [
   { value: 'disabled', label: 'No Blending' },
   { value: 'logorithmic', label: 'Realistic Ghosting' },
@@ -71,6 +65,9 @@ export default function Settings() {
     context.store.set('palette',palette);
     context.store.set('darkMode',darkMode);
   });
+
+  const WrappedColorPicker = ({ onSelect, ...rest }) =>
+    <SketchPicker {...rest} disableAlpha onChange={(c) => onSelect(c.hex)} />
 
   return (
     <>
