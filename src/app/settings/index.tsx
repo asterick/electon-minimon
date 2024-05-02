@@ -61,7 +61,7 @@ export default function Settings() {
     context.store.set('frames',frames);
     context.store.set('blendingType',blendingType);
     context.store.set('weights',weights);
-    context.store.set('intensity',palette);
+    context.store.set('intensity', intensity);
     context.store.set('palette',palette);
     context.store.set('darkMode',darkMode);
   });
@@ -70,7 +70,7 @@ export default function Settings() {
     <SketchPicker {...rest} disableAlpha onChange={(c) => onSelect(c.hex)} />
 
   return (
-    <>
+    <div className="settings">
       <FormGroup label="Theme">
         <HTMLSelect
             fill
@@ -149,6 +149,6 @@ export default function Settings() {
       <GradientPicker palette={palette} onPaletteChange={setPalette}>
         <WrappedColorPicker />
       </GradientPicker>
-    </>
+    </div>
   );
 }

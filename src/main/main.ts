@@ -77,16 +77,23 @@ const createWindow = async () => {
     return path.join(RESOURCES_PATH, ...paths);
   };
 
+  const windowSize = store.get('settings:windowSize');
+  console.log(windowSize);
+
   mainWindow = new BrowserWindow({
     show: false,
-    width: 1024,
-    height: 728,
     icon: getAssetPath('icon.png'),
     webPreferences: {
       preload: app.isPackaged
         ? path.join(__dirname, 'preload.js')
         : path.join(__dirname, '../../.erb/dll/preload.js'),
     },
+    ... windowSize
+  });
+
+  mainWindow.on('resize', () =>{
+    const [ width, height ] = mainWindow.getSize();
+    store.set('settings:windowSize', {width, height});
   });
 
   mainWindow.loadURL(resolveHtmlPath('index.html'));
