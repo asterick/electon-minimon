@@ -196,6 +196,33 @@ export default class MenuBuilder {
   }
 
   buildDefaultTemplate() {
+    const viewCommonDefault = [
+      {
+        label: 'Debugger',
+        accelerator: 'Alt+1',
+        click: () => {
+          this.mainWindow?.webContents.send('open-view', 'debugger');
+        },
+      },
+      {
+        label: 'Settings',
+        accelerator: 'Alt+0',
+        click: () => {
+          this.mainWindow?.webContents.send('open-view', 'settings');
+        },
+      },
+      { type: 'separator' },
+      {
+        label: 'Toggle &Full Screen',
+        accelerator: 'F11',
+        click: () => {
+          this.mainWindow.setFullScreen(
+            !this.mainWindow.isFullScreen(),
+          );
+        },
+      }
+    ];
+
     const templateDefault = [
       {
         label: '&File',
@@ -232,20 +259,12 @@ export default class MenuBuilder {
           process.env.NODE_ENV === 'development' ||
           process.env.DEBUG_PROD === 'true'
             ? [
+                ... viewCommonDefault,
                 {
                   label: '&Reload',
                   accelerator: 'Ctrl+R',
                   click: () => {
                     this.mainWindow.webContents.reload();
-                  },
-                },
-                {
-                  label: 'Toggle &Full Screen',
-                  accelerator: 'F11',
-                  click: () => {
-                    this.mainWindow.setFullScreen(
-                      !this.mainWindow.isFullScreen(),
-                    );
                   },
                 },
                 {
@@ -256,17 +275,7 @@ export default class MenuBuilder {
                   },
                 },
               ]
-            : [
-                {
-                  label: 'Toggle &Full Screen',
-                  accelerator: 'F11',
-                  click: () => {
-                    this.mainWindow.setFullScreen(
-                      !this.mainWindow.isFullScreen(),
-                    );
-                  },
-                },
-              ],
+            : viewCommonDefault,
       },
       {
         label: 'Help',

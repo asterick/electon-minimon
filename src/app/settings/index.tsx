@@ -20,6 +20,7 @@ import { useContext, useState, useEffect } from 'react';
 import { GradientPicker } from 'react-linear-gradient-picker';
 import { SketchPicker } from 'react-color';
 import {
+  Switch,
   Slider,
   HTMLSelect,
   FormGroup,
@@ -69,6 +70,7 @@ export default function Settings() {
 
   return (
     <>
+      <Switch label="Dark Mode" />
       <FormGroup label="System Volume">
         <Slider
           min={0.0}
@@ -93,9 +95,10 @@ export default function Settings() {
 
       {blendingType === 'custom' && (
         <FormGroup label="Frame Weights">
-          <ControlGroup>
+          <ControlGroup fill={true}>
             {weights.map((value, i) => (
               <Slider
+
                 key={i}
                 min={0.0}
                 max={1.0}

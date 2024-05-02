@@ -7,6 +7,7 @@ import Debugger from './debugger';
 import SystemContext from './context';
 
 import './style.scss';
+import { AppImageUpdater } from 'electron-updater';
 
 const defaultSettings = {
   settings: {
@@ -27,6 +28,24 @@ const api: DockviewPanelApi  = props.api;
 const groupApi: DockviewGroupPanelApi  = props.group.api;
 const containerApi: DockviewApi  = props.containerApi;
 */
+
+const panels = {
+  screen: {
+    id: 'screen',
+    component: 'screen',
+    title: 'Screen',
+  },
+  debugger: {
+    id: 'debugger',
+    component: 'debugger',
+    title: 'Debugger',
+  },
+  settings: {
+    id: 'settings',
+    component: 'settings',
+    title: 'Settings',
+  }
+}
 
 const components = {
   screen: (props: IDockviewPanelProps) => <Screen />,
@@ -139,19 +158,22 @@ export function App({ store, system }) {
   rebuild();
 
   /* Casual hook to read darkmode status from main process */
-  useEffect(() => {
-    if (typeof window !== 'undefined' && typeof window.process === 'object' && window.process.type === 'renderer') {
+  if (typeof window !== 'undefined' && typeof window.process === 'object' && window.process.type === 'renderer') {
+    useEffect(() => {
       window.electron.ipcRenderer.on('dark-mode', (darkMode) => setDarkMode(darkMode)); // This should use the sent value
       window.electron.getDarkMode();
-    } else {
+    });
+  } else {
+    useEffect(() => {
       if (window.matchMedia) {
         setDarkMode(window.matchMedia('(prefers-color-scheme: dark)').matches);
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
           setDarkMode(event.matches);
         });
       }
-    }
-  });
+    });
+  }
+
 
   function onReady(event: DockviewReadyEvent) {
     /**
@@ -160,30 +182,33 @@ export function App({ store, system }) {
      */
     const api: DockviewApi = event.api;
 
-    api.addPanel({
-      id: 'screen',
-      component: 'screen',
-      title: 'Screen',
-    });
-    api.addPanel({
-      id: 'debugger',
-      component: 'debugger',
-      title: 'Debugger',
-    });
-    api.addPanel({
-      id: 'settings',
-      component: 'settings',
-      title: 'Settings',
-    });
+    function addPanel(name) {
+
+      if (api.getPanel(name)) return ;
+      api.addPanel(panels[name]);
+    }
+
+    api.onDidLayoutChange(() => {
+      addPanel('screen');
+      setStore('layout', api.toJSON());
+    })
+
+    let layout = getStore('layout');
+    console.log(Object.keys(layout.panels));
+
+    if (layout) api.fromJSON(layout);
+    addPanel('screen');
+
+    window.electron.ipcRenderer.on('open-view', addPanel);
   }
 
   return (
-    <div className={darkMode ? "bp5-dark dockview-theme-abyss root-container" : "dockview-theme-light root-container"}>
-      <SystemContext.Provider
-        value={{ system, store: { get: getStore, set: setStore } }}
-        >
-        <DockviewReact components={components} onReady={onReady} />
-      </SystemContext.Provider>
-    </div>
+    <SystemContext.Provider
+      value={{ system, store: { get: getStore, set: setStore } }}>
+      <DockviewReact
+        className={darkMode ? "bp5-dark dockview-theme-abyss root-container" : "dockview-theme-light root-container"}
+        components={components}
+        onReady={onReady} />
+    </SystemContext.Provider>
   );
 }
