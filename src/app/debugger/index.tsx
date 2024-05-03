@@ -1,7 +1,30 @@
+/*
+ISC License
+
+Copyright (c) 2019, Bryon Vandiver
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted, provided that the above
+copyright notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+*/
+
 import { useContext, useEffect, useState, useRef } from 'react';
-import { ButtonGroup, Button, Tooltip, ControlGroup, HTMLSelect, Switch } from '@blueprintjs/core';
+import { Button, Tooltip, ControlGroup, HTMLSelect, Switch } from '@blueprintjs/core';
+import {AutoSizer, List} from 'react-virtualized';
 import SystemContext from '../context';
 import './style.css';
+
+/*
+ * document.querySelectorAll( "[data-address]:hover" )
+ */
 
 export default function Debugger() {
   const ref = useRef(null);
@@ -70,6 +93,24 @@ export default function Debugger() {
     };
   });
 
+  function rowRenderer({key, index, style}) {
+    const { address, label, operation, parameters, raw } = disassembly[index];
+
+    let padAddress = "00000"+address.toString(16).toUpperCase();
+
+    return (
+      <div className="entry" data-address={address} key={key} style={style}>
+        <span className="address">{padAddress.substring(padAddress.length - 6)}</span>
+        <span className="raw">{raw}</span>
+        <span className="label">
+          {label && <><span className="identifier">{label}</span><span className="symbol">:</span></>}
+        </span>
+        <span className="operation">{operation}</span>
+        <span className="parameters" dangerouslySetInnerHTML={{__html: parameters}} />
+        </div>
+    );
+  }
+
   return (
     <div className="debugger">
       <ControlGroup className="toolbar">
@@ -97,7 +138,19 @@ export default function Debugger() {
       </ControlGroup>
 
       <div className="body">
-        <div className="disassembly"></div>
+        <div className="disassembly">
+          <AutoSizer>
+            {({height, width}) => (
+              <List
+                height={height}
+                rowCount={disassembly.length}
+                rowHeight={20}
+                rowRenderer={rowRenderer}
+                width={width}
+              />
+            )}
+          </AutoSizer>
+        </div>
         <div className="info">
           <div className="registers">asdf</div>
           <div className="stack">asdf</div>

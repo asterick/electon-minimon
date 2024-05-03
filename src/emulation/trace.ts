@@ -16,12 +16,16 @@ ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+/*
+ * Todo: disassembler should look for writes to NB instead of assuming jump is in the same page
+ */
+
 import Minimon from '.';
 import * as Table from '../core/instructions';
 
-const MAX_DATA_WORDS = 8;
-const MAX_DATA_BYTES = 16;
-const IllegalInstruction = "illegal"
+const MAX_DATA_WORDS = 5;
+const MAX_DATA_BYTES = 10;
+const IllegalInstruction = "NDEF"
 
 const BreakInstructions = [
 	"CALL", "CARS",	"JRS", "CARL", "JRL", "JP", "DJR", IllegalInstruction
@@ -49,6 +53,8 @@ const Conditions = {
   [Table.Condition.NOT_SPECIAL_FLAG_2]: 'NF2',
   [Table.Condition.NOT_SPECIAL_FLAG_3]: 'NF3',
 };
+
+const HTMLComma = "<span class='symbol'>,</span> ";
 
 function BIT(n:number) {
   return 1 << n;
@@ -81,6 +87,11 @@ export enum TraceAccess {
   WRITE = BIT(31),
 }
 
+function format(v, d = 2) {
+  let o = "00000" + v.toString(16).toUpperCase();
+  return `${o.substring(o.length - d)}`;
+}
+
 export default class Tracer extends EventTarget {
   private trace:Uint32Array;
   private traceBank:Object;
@@ -95,19 +106,14 @@ export default class Tracer extends EventTarget {
     this.labels = {};
 
     this.traceBank = {
-      bios: { dirty: true, data: system.state.buffers.bios, address: 0x0000, name: "System BIOS ($000000~$000FFF)" },
-      ram:  { dirty: true, data: system.state.ram, address: 0x1000, name: "System RAM ($001000~$001FFF)" },
+      bios: { dirty: true, data: system.state.buffers.bios, address: 0x0000, name: "System BIOS (0000000h~0000FFFh)" },
+      ram:  { dirty: true, data: system.state.ram, address: 0x1000, name: "System RAM (0001000h~0001FFFh)" },
     };
 
     this.reset(system);
   }
 
   reset(system) {
-    function formatAddress(address) {
-      let extended = `000000${address.toString(16)}`;
-      return extended.substring(extended.length - 6);
-    }
-
     for (let address = 0x2100; address < 0x200000; address = (address + 0x8000) & ~0x7FFF) {
       let bank = address >> 15;
       let end = address | 0x7FFF;
@@ -117,7 +123,7 @@ export default class Tracer extends EventTarget {
         address,
         data: system.state.buffers.cartridge.subarray(address, end + 1),
         dirty: true,
-        name: `ROM Bank ${bank} (\$${formatAddress(address)}~\$${formatAddress(end)})`
+        name: `ROM Bank ${bank} (${format(address, 6)}~${format(end, 6)})`
       };
     };
 
@@ -151,61 +157,58 @@ export default class Tracer extends EventTarget {
       let rel = (v & 0x8000) ? (address & ~0x7FFF) | (v & 0x7FFF) : v
 
       if (this.labels[rel]) {
-        return this.labels[rel];
+        return `<span class="identifier">${this.labels[rel]}</span>`;
       } else {
-        return `#0${rel}h`
+        return `<span class="literal">#0${rel}h</literal>`
       }
     }
 
-    function format(v, d) {
-      let o = "00000" + v.toString(16);
-      return o.substring(o.length - d);
+    function signed(val) {
+      if (val > 0) {
+        return `+${val}`;
+      } else {
+        return val.toString();
+      }
     }
 
     function arg(arg) {
       let val;
 
       switch (arg) {
-        case Table.Argument.REGS_ALL: return 'ALL';
-        case Table.Argument.REGS_ALE: return 'ALE';
-        case Table.Argument.REG_A: return 'A';
-        case Table.Argument.REG_B: return 'B';
-        case Table.Argument.REG_L: return 'L';
-        case Table.Argument.REG_H: return 'H';
-        case Table.Argument.REG_BA: return 'BA';
-        case Table.Argument.REG_HL: return 'HL';
-        case Table.Argument.REG_IX: return 'IX';
-        case Table.Argument.REG_IY: return 'IY';
-        case Table.Argument.REG_NB: return 'NB';
-        case Table.Argument.REG_BR: return 'BR';
-        case Table.Argument.REG_EP: return 'EP';
-        case Table.Argument.REG_IP: return 'IP';
-        case Table.Argument.REG_XP: return 'XP';
-        case Table.Argument.REG_YP: return 'YP';
-        case Table.Argument.REG_SC: return 'SC';
-        case Table.Argument.REG_SP: return 'SP';
-        case Table.Argument.REG_PC: return 'PC';
-        case Table.Argument.MEM_HL: return '[HL]';
-        case Table.Argument.MEM_IX: return '[IX]';
-        case Table.Argument.MEM_IY: return '[IY]';
-        case Table.Argument.MEM_IX_OFF: return '[IX+L]';
-        case Table.Argument.MEM_IY_OFF: return '[IY+L]';
-        case Table.Argument.MEM_SP_DISP:
-          val = s8();
-          return `[SP${val > 0 ? '+' : ''}${val}]`;
-        case Table.Argument.MEM_IX_DISP:
-          val = s8();
-          return `[IX${val > 0 ? '+' : ''}${val}]`;
-        case Table.Argument.MEM_IY_DISP:
-          val = s8();
-          return `[IY${val > 0 ? '+' : ''}${val}]`;
-        case Table.Argument.MEM_ABS16: return `[0${i16().toString(16).toUpperCase()}h]`;
-        case Table.Argument.MEM_BR: return `[BR:0${i8().toString(16).toUpperCase()}h]`;
-        case Table.Argument.MEM_VECTOR: return `[0${i8().toString(16).toUpperCase()}h]`;
-        case Table.Argument.IMM_8: return `#0${i8().toString(16).toUpperCase()}h`;
-        case Table.Argument.IMM_16: return `#0${i16().toString(16).toUpperCase()}h`;
-        case Table.Argument.REL_8: return pcRelative(s8());
-        case Table.Argument.REL_16: return pcRelative(s16());
+        case Table.Argument.REGS_ALL: return '<span class="register">ALL</span>';
+        case Table.Argument.REGS_ALE: return '<span class="register">ALE</span>';
+        case Table.Argument.REG_A: return '<span class="register">A</span>';
+        case Table.Argument.REG_B: return '<span class="register">B</span>';
+        case Table.Argument.REG_L: return '<span class="register">L</span>';
+        case Table.Argument.REG_H: return '<span class="register">H</span>';
+        case Table.Argument.REG_BA: return '<span class="register">BA</span>';
+        case Table.Argument.REG_HL: return '<span class="register">HL</span>';
+        case Table.Argument.REG_IX: return '<span class="register">IX</span>';
+        case Table.Argument.REG_IY: return '<span class="register">IY</span>';
+        case Table.Argument.REG_NB: return '<span class="register">NB</span>';
+        case Table.Argument.REG_BR: return '<span class="register">BR</span>';
+        case Table.Argument.REG_EP: return '<span class="register">EP</span>';
+        case Table.Argument.REG_IP: return '<span class="register">IP</span>';
+        case Table.Argument.REG_XP: return '<span class="register">XP</span>';
+        case Table.Argument.REG_YP: return '<span class="register">YP</span>';
+        case Table.Argument.REG_SC: return '<span class="register">SC</span>';
+        case Table.Argument.REG_SP: return '<span class="register">SP</span>';
+        case Table.Argument.REG_PC: return '<span class="register">PC</span>';
+        case Table.Argument.MEM_HL: return '<span class="symbol">[</span><span class="register">HL</span><span class="symbol">]</span>';
+        case Table.Argument.MEM_IX: return '<span class="symbol">[</span><span class="register">IX</span><span class="symbol">]</span>';
+        case Table.Argument.MEM_IY: return '<span class="symbol">[</span><span class="register">IY</span><span class="symbol">]</span>';
+        case Table.Argument.MEM_IX_OFF: return '<span class="symbol">[</span><span class="register">IX</span><span class="symbol">+</span><span class="register">L</span><span class="symbol">]</span>';
+        case Table.Argument.MEM_IY_OFF: return '<span class="symbol">[</span><span class="register">IY</span><span class="symbol">+</span><span class="register">L</span><span class="symbol">]</span>';
+        case Table.Argument.MEM_SP_DISP: return `[SP${signed(s8())}]`;
+        case Table.Argument.MEM_IX_DISP: return `[IX${signed(s8())}]`;
+        case Table.Argument.MEM_IY_DISP: return `[IY${signed(s8())}]`;
+        case Table.Argument.MEM_ABS16: return `<span class="symbol">[</span><span class="literal">0${format(i16())}h</span><span class="symbol">]</span>`;
+        case Table.Argument.MEM_BR: return `<span class="symbol">[</span><span class="register">BR</span><span class="symbol">:</span><span class="literal">0${format(i8())}h</span><span class="symbol">]</span>`;
+        case Table.Argument.MEM_VECTOR: return `<span class="symbol">[</span><span class="literal">0${format(i8())}h</span><span class="symbol">]</span>`;
+        case Table.Argument.IMM_8: return `<span class="literal">#0${format(i8())}h</span>`;
+        case Table.Argument.IMM_16: return `<span class="literal">#0${format(i16())}h</span>`;
+        case Table.Argument.REL_8: return pcRelative(address + s8());
+        case Table.Argument.REL_16: return pcRelative(address + s16());
       }
     }
 
@@ -220,7 +223,9 @@ export default class Tracer extends EventTarget {
 
           // Pull opcode out of table
           let opcode = Table.InstructionTable;
-          while (Array.isArray(opcode)) opcode = opcode[i8()];
+          do {
+            opcode = opcode[i8()];
+          } while (Array.isArray(opcode));
 
           let operation;
           let parameters;
@@ -232,7 +237,7 @@ export default class Tracer extends EventTarget {
             parameters = args.map(arg);
 
             if (condition !== Table.Condition.NONE) {
-              parameters.unshift(Conditions[opcode.condition]);
+              parameters.unshift(`<span class="condition">${Conditions[opcode.condition]}</span>`);
             }
 
             if (index > data.length) {
@@ -252,12 +257,11 @@ export default class Tracer extends EventTarget {
           // Format raw data
           let raw = [];
           for (let i = startIndex; i < index; i++) {
-            raw.push(format(data[i], 2));
+            raw.push(format(data[i]));
           }
 
+          render.push({ operation, address: startAddress, parameters: parameters.join(HTMLComma), raw: raw.join(" ") });
           trace = this.trace[address];;
-
-          render.push({ operation, startAddress, parameters, raw });
         } while (index < data.length && !terminate);
       } else if (data.length - index >= 2 && trace & TraceAccess.WORD_LO) {
         const startAddress = address;
@@ -265,32 +269,33 @@ export default class Tracer extends EventTarget {
 
         // Unroll word data
         do {
+          const wordAddr = address;
           const word = i16();
 
           if (trace & TraceAccess.VECTOR && this.labels[word]) {
-            parameters.push(this.labels[word])
+            parameters.push(`<span class="identifier" data-address="${wordAddr}">${this.labels[word]}</span>`)
           } else {
-            parameters.push(`0${format(word, 4)}h`);
+            parameters.push(`<span class="literal" data-address="${wordAddr}">0${format(word, 4)}h</span>`);
           }
 
           trace = this.trace[address];
         } while (parameters.length < MAX_DATA_WORDS && data.length - index >= 2 && !this.labels[address] && (trace & TraceAccess.WORD_LO));
 
-        render.push({ operation: "DW", address: startAddress, parameters });
+        render.push({ operation: "DW", address: startAddress, parameters: parameters.join(HTMLComma) });
       } else {
         const startAddress = address;
         const parameters = [];
 
         do {
-          parameters.push(`0${format(i8(), 2)}h`);
+          const wordAddr = address;
+          parameters.push(`<span class="literal" data-address="${wordAddr}">0${format(i8())}h</span>`);
           trace = this.trace[address];
         } while (parameters.length < MAX_DATA_BYTES && index < data.length && !this.labels[address] && !(this.trace[address] & (TraceAccess.WORD_LO | TraceAccess.INSTRUCTION)));
-        render.push({ operation: "DB", address: startAddress, parameters });
+        render.push({ operation: "DB", address: startAddress, parameters: parameters.join(HTMLComma) });
       }
     }
 
-    render.forEach((block) => { if (this.labels[block.startAddress]) block.label = this.labels[block.startAddress] })
-    console.log(render);
+    render.forEach((block) => { if (this.labels[block.address]) block.label = this.labels[block.address] })
 
     return render;
   }

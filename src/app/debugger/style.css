@@ -1,7 +1,14 @@
+@import "@blueprintjs/core/lib/scss/variables";
+
 .debugger {
   display: flex;
   flex-direction: column;
   align-items: stretch;
+  top: 0;
+  left: 0;
+  position: absolute;
+  width: 100%;
+  height: 100%;
 
   .toolbar {
     flex: 0 0 auto;
@@ -19,8 +26,116 @@
   }
 
   .disassembly {
+    * {
+      box-sizing: border-box;
+    }
+
+    position: relative;
     display: flex;
     flex: 1 0 auto;
+    font-family: monospace;
+
+    .entry {
+      display: flex;
+      flex-direction: row;
+
+      .label,
+      .raw,
+      .parameters {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        text-wrap: nowrap;
+
+        flex-shrink: 1;
+      }
+
+      .address {
+        width: 8ex;
+        text-align: center;
+        flex-shrink: 0;
+      }
+
+      .raw {
+        width: calc(3ex * 4 + 2ex);
+        padding: 0 1ex;
+        min-width: 0;
+      }
+
+
+      .label {
+        min-width: 0;
+        width: 20ex;
+
+        padding-right: 1ex;
+      }
+
+      .operation {
+        width: 5em;
+        flex-shrink: false;
+      }
+
+      .parameters {
+        flex-grow: 1;
+      }
+    }
+
+    .raw {
+      color: $blue1;
+    }
+
+    .register {
+      color: $gold1;
+    }
+
+    .identifier {
+      color: $cerulean1;
+    }
+
+    .operation {
+      color: $violet1;
+    }
+
+    .symbol {
+      color: $gray3;
+    }
+
+    .literal {
+      color: $green1;
+    }
+
+    .condition {
+      color: $vermilion1;
+    }
+  }
+
+  .bp5-dark & .disassembly {
+    .raw {
+      color: $blue3 !important;
+    }
+
+    .register {
+      color: $gold5 !important;
+    }
+
+    .identifier {
+      color: $cerulean5 !important;
+    }
+
+    .operation {
+      color: $violet5 !important;
+    }
+
+    .symbol {
+      color: $gray3 !important;
+    }
+
+    .literal {
+      color: $green5 !important;
+    }
+
+    .condition {
+      color: $vermilion4;
+    }
   }
 
   .info {
