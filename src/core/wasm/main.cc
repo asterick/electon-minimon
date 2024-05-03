@@ -65,9 +65,10 @@ struct FieldDecl
 extern "C" Machine::State *const get_machine()
 {
   static Machine::State machine_state = {
-      .bios = {
+      .buffers = {
+          .bios = {
 #include "bios.h"
-      }};
+          }}};
   return &machine_state;
 }
 
@@ -255,6 +256,7 @@ static const StructDecl MachineBuffers = {
     sizeof(Machine::Buffers),
     (const FieldDecl[]){
         FIELD("cartridge", Machine::Buffers, cartridge, TYPE_UINT8, SIZE(0x200000)),
+        FIELD("bios", Machine::Buffers, bios, TYPE_UINT8, SIZE(0x1000)),
         FIELD("audio", Machine::Buffers, audio, TYPE_FLOAT32, SIZE(AUDIO_BUFFER_LENGTH)),
         FIELD("framebuffer", Machine::Buffers, framebuffer, TYPE_UINT8, SIZE(LCD_WIDTH *LCD_HEIGHT * sizeof(uint32_t))),
         FIELD("palette", Machine::Buffers, palette, TYPE_UINT32, SIZE(0x100)),
@@ -272,8 +274,6 @@ static const StructDecl MachineState = {
         STRUCT("irq", Machine::State, irq, IrqState),
         STRUCT("tim256", Machine::State, tim256, Tim256State),
         FIELD("ram", Machine::State, ram, TYPE_UINT8, SIZE(0x1000)),
-        FIELD("bios", Machine::State, bios, TYPE_UINT8, SIZE(0x1000)),
-        FIELD("system_mem", Machine::State, system_mem, TYPE_UINT8, SIZE(0x2000)),
         STRUCT("lcd", Machine::State, lcd, LcdState),
         STRUCT("input", Machine::State, input, InputState),
         STRUCT("blitter", Machine::State, blitter, BlitterState),

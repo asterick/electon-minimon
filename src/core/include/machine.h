@@ -110,6 +110,7 @@ namespace Machine
   {
     // Raw cartridge data
     uint8_t cartridge[0x200000];
+    uint8_t bios[0x1000];
 
     // Runtime interface buffers
     float audio[AUDIO_BUFFER_LENGTH];
@@ -140,16 +141,8 @@ namespace Machine
 
     union
     {
-      struct
-      {
-        uint8_t bios[0x1000];
-        union
-        {
-          uint8_t ram[0x1000];
-          Blitter::Overlay overlay;
-        };
-      };
-      uint8_t system_mem[0x2000];
+      uint8_t ram[0x1000];
+      Blitter::Overlay overlay;
     };
 
     Buffers buffers;

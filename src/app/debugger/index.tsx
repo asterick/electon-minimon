@@ -4,31 +4,69 @@ import SystemContext from '../context';
 import './style.css';
 
 export default function Debugger() {
-  const listeners = useRef(null);
+  const ref = useRef(null);
   const context = useContext(SystemContext);
 
   const [running, setRunning] = useState(context.system.running);
   const [state, setState] = useState(context.system.state);
+  const [pageNames, setPageNames] = useState(context.system.tracer.getPages());
+  const [followPC, setFollowPC] = useState(true);
+  const [page, setPage] = useState('bios');
+  const [disassembly, setDisassembly] = useState(context.system.tracer.render(page));
+
+  function updateState (e: CustomEvent) {
+    setState(e.detail);
+
+    if (followPC) {
+      let pc = context.system.physicalPC();
+      let newPage;
+
+      if (pc <= 0x0FFF)
+        newPage = "bios";
+      else if (pc <= 0x1FFF)
+        newPage = "ram";
+      else
+        newPage = `rom:${pc >> 15}`
+
+      if (newPage !== page) {
+        setPage(newPage);
+        setDisassembly(context.system.tracer.render(newPage));
+      }
+    }
+  }
+  function updateRunning (e: CustomEvent) {
+    setRunning(e.detail);
+  }
+  function updatePages() {
+    setPageNames(context.system.tracer.getPages());
+  }
+  function updateTrace (e: CustomEvent) {
+    setDisassembly(context.system.tracer.render(page));
+  }
 
   useEffect(() => {
-    if (!listeners.current) {
-      listeners.current = {
-        updateState: (e: CustomEvent) => {
-          setState(e.detail);
-        },
-        updateRunning: (e: CustomEvent) => {
-          setRunning(e.detail);
-        }
-      }
+    if (!ref.current) {
+      ref.current = {
+        prevPage: page
+      };
 
-      context.system.addEventListener('update:state', listeners.updateState);
-      context.system.addEventListener('update:running', listeners.updateRunning);
+      context.system.addEventListener('update:cartridgeChanged', updatePages);
+      context.system.addEventListener('update:state', updateState);
+      context.system.addEventListener('update:running', updateRunning);
+    } else {
+      context.system.tracer.removeEventListener(`trace:changed[${ref.current.prevPage}]`, updateTrace);
     }
 
+    context.system.tracer.addEventListener(`trace:changed[${page}]`, updateTrace);
+    ref.current.prevPage = page;
+
     return () => {
-      context.system.removeEventListener('update:state', listeners.updateState);
-      context.system.removeEventListener('update:running', listeners.updateRunning);
-      listeners.current = null;
+      context.system.tracer.removeEventListener(`trace:changed[${page}]`, updateTrace);
+      context.system.removeEventListener('update:cartridgeChanged', updatePages);
+      context.system.removeEventListener('update:state', updateState);
+      context.system.removeEventListener('update:running', updateRunning);
+      context.system.tracer.removeEventListener('trace:changed', updateTrace);
+      ref.current = null;
     };
   });
 
@@ -54,12 +92,12 @@ export default function Debugger() {
         <Tooltip content="Step Out" compact={true}>
           <Button icon="drawer-right" onClick={() => context.system.step()} />
         </Tooltip>
-        <HTMLSelect fill={true} options={['a','b','c']} />
-        <Switch large={true} label="Follow PC" />
+        <HTMLSelect fill={true} value={page} onChange={(e) => {setPage(e.target.value)}} options={pageNames} />
+        <Switch large={true} checked={followPC} onChange={(e) => setFollowPC(!followPC)} label="Follow PC" />
       </ControlGroup>
 
       <div className="body">
-        <div className="disassembly">asdf</div>
+        <div className="disassembly">{/* enter disassembly here */}</div>
         <div className="info">
           <div className="registers">asdf</div>
           <div className="stack">asdf</div>

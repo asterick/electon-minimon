@@ -225,7 +225,7 @@ extern "C" uint8_t cpu_read(Machine::State &cpu, uint32_t address)
 {
   if (address <= 0x0FFF)
   {
-    return cpu.bus_cap = cpu.bios[address];
+    return cpu.bus_cap = cpu.buffers.bios[address];
   }
   else if (address <= 0x1FFF)
   {

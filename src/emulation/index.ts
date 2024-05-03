@@ -149,7 +149,7 @@ export default class Minimon extends EventTarget {
       this.state.clocks += delta; // advance our clock
 
       while (this.state.clocks > 0) {
-        if (this.breakpoints.indexOf(this.translate(this.state.cpu.pc)) >= 0) {
+        if (this.breakpoints.indexOf(this.physicalPC()) >= 0) {
           this.running = false;
           break;
         }
@@ -246,14 +246,14 @@ export default class Minimon extends EventTarget {
   }
 
   eject() {
-    inst.tracer = new Tracer(inst);
-
+    this.dispatchEvent(new Event('update:cartridgeChanged'));
+    this.tracer.reset(this);
     this.inputState |= INPUT_CART_N;
     this.updateInput();
   }
 
-  // WASM shim functions
-  translate(address: number) {
+  physicalPC() {
+    const address = this.state.cpu.pc;
     if (address & 0x8000) {
       return (address & 0x7fff) | (this.state.cpu.cb << 15);
     }

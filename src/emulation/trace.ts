@@ -24,6 +24,8 @@ function BIT(n:number) {
 }
 
 export enum TraceAccess {
+  NONE = 0,
+
   // Category: Access Type
   WORD_LO = BIT(0),
   WORD_HI = BIT(1),
@@ -59,30 +61,42 @@ export default class Tracer extends EventTarget {
     this.tracedAccess = new Uint32Array(0x200000);
     this.dirty = true;
     this.traceBank = {
-      bios: { dirty: true, data: system.state.system_mem, start: 0x0000, end: 0x0FFF, name: "System BIOS ($000000~$000FFF)" },
-      ram:  { dirty: true, data: system.state.system_mem, start: 0x1000, end: 0x1FFF, name: "System RAM ($001000~$001FFF)" },
+      bios: { dirty: true, data: system.state.bios, address: 0x0000, name: "System BIOS ($000000~$000FFF)" },
+      ram:  { dirty: true, data: system.state.ram, address: 0x1000, name: "System RAM ($001000~$001FFF)" },
     };
 
+    this.reset(system);
+  }
+
+  reset(system) {
     function formatAddress(address) {
       let extended = `000000${address.toString(16)}`;
       return extended.substring(extended.length - 6);
     }
 
-    for (let start = 0x2100; start < 0x200000; start = (start + 0x8000) & ~0x7FFF) {
-      let bank = start >> 15;
-      let end = start | 0x7FFF;
+    for (let address = 0x2100; address < 0x200000; address = (address + 0x8000) & ~0x7FFF) {
+      let bank = address >> 15;
+      let end = address | 0x7FFF;
+      let name = `rom:${bank}`;
 
-      this.traceBank[`rom:${bank}`] = {
-        start, end,
-        data: system.state.buffers.cartridge,
+      this.traceBank[name] = {
+        address,
+        data: system.state.buffers.cartridge.subarray(address, end + 1),
         dirty: true,
-        name: `ROM Bank ${bank} (\$${formatAddress(start)}~\$${formatAddress(end)})`
+        name: `ROM Bank ${bank} (\$${formatAddress(address)}~\$${formatAddress(end)})`
       };
     };
+
+    for (let i = 0x1000; i < this.traceAccess.length; i++) {
+      this.traceAccess[i] = TraceAccess.NONE;
+    }
+
+    // Prerender all pages so we don't get stampeded with events
+    Object.keys(this.traceBank).forEach((bank) => this.render(bank));
   }
 
   getPages() {
-    return Object.keys(this.traceBank).map((value) => ({ value, label: this.traceBank[value] }))
+    return Object.keys(this.traceBank).map((value) => ({ value, label: this.traceBank[value].name }))
   }
 
   render(bank) {
@@ -94,17 +108,28 @@ export default class Tracer extends EventTarget {
     let render = this.traceBank[bank].render = [];
     let { start, end, data } = this.traceBank[bank];
 
+    function i8() { return data[start++] }
+    function i16() { return i8() | (i8() << 8) }
+    function s8() { return i8() << 24 >> 24 }
+    function s16() { return i16() << 16 >> 16 }
+
+    // TODO: GENERATE DISASSEMBLY / DATA BLOCKS HERE
+
+    return render;
   }
 
   update() {
     if (!this.dirty) return ;
     this.dirty = false;
 
-    const dirty = Object.keys(this.traceBank)
-      .filter((bank) => this.traceBank[bank].dirty)
-      .reduce((acc, bank) => acc[bank] = (this.traceBank[bank], acc), {});
 
-    this.dispatchEvent(new CustomEvent("trace:changed", { detail: dirty }));
+    const dirty = Object.keys(this.traceBank)
+      .forEach((page) => {
+        const bank = this.traceBank[page];
+        if (!bank.dirty) return ;
+
+        this.dispatchEvent(new CustomEvent(`trace:changed[${page}]`, { detail: bank }));
+      });
   }
 
   traceAccess(cpu: number, address: number, kind: number, data: number) {
