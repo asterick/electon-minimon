@@ -24,7 +24,7 @@ const MAX_DATA_BYTES = 16;
 const IllegalInstruction = "illegal"
 
 const BreakInstructions = [
-	"CARS",	"JRS",	"CARL",	"JRL",	"JP",	"DJR", IllegalInstruction
+	"CALL", "CARS",	"JRS", "CARL", "JRL", "JP", "DJR", IllegalInstruction
 ];
 
 const Conditions = {
@@ -142,21 +142,24 @@ export default class Tracer extends EventTarget {
     let { address, data } = bank;
     let index = 0;
 
-    function i8() { return address++, data[index++] }
+    function i8() { return address++, data[index++]; }
     function i16() { return i8() | (i8() << 8) }
     function s8() { return i8() << 24 >> 24 }
     function s16() { return i16() << 16 >> 16 }
 
-    function pcRelative(v) {
-      if (v & 0x8000) {
-        return (address & ~0x7FFF) | (v & 0x7FFF);
+    const pcRelative = (v) => {
+      let rel = (v & 0x8000) ? (address & ~0x7FFF) | (v & 0x7FFF) : v
+
+      if (this.labels[rel]) {
+        return this.labels[rel];
       } else {
-        return v;
+        return `#0${rel}h`
       }
     }
 
-    function format(i, d) {
-      return i.toString(16).toUpperCase();
+    function format(v, d) {
+      let o = "00000" + v.toString(16);
+      return o.substring(o.length - d);
     }
 
     function arg(arg) {
@@ -196,11 +199,11 @@ export default class Tracer extends EventTarget {
         case Table.Argument.MEM_IY_DISP:
           val = s8();
           return `[IY${val > 0 ? '+' : ''}${val}]`;
-        case Table.Argument.MEM_ABS16: return `[${format(i16(), 4)}h]`;
-        case Table.Argument.MEM_BR: return `[BR:${format(i8(), 2)}h]`;
-        case Table.Argument.MEM_VECTOR: return `[${format(i8(), 2)}h]`;
-        case Table.Argument.IMM_8: return `#x${i8().toString(16).toUpperCase()}h`;
-        case Table.Argument.IMM_16: return `#y${i16().toString(16).toUpperCase()}h`;
+        case Table.Argument.MEM_ABS16: return `[0${i16().toString(16).toUpperCase()}h]`;
+        case Table.Argument.MEM_BR: return `[BR:0${i8().toString(16).toUpperCase()}h]`;
+        case Table.Argument.MEM_VECTOR: return `[0${i8().toString(16).toUpperCase()}h]`;
+        case Table.Argument.IMM_8: return `#0${i8().toString(16).toUpperCase()}h`;
+        case Table.Argument.IMM_16: return `#0${i16().toString(16).toUpperCase()}h`;
         case Table.Argument.REL_8: return pcRelative(s8());
         case Table.Argument.REL_16: return pcRelative(s16());
       }
@@ -209,15 +212,15 @@ export default class Tracer extends EventTarget {
     let trace = this.trace[address];
     while (index < data.length) {
       if (trace & TraceAccess.INSTRUCTION) {
-        // TOOD: THIS SHOULD CHECK IF INSTRUCTION WILL CROSS INTO NEXT PAGE
-        // Generate instructions (until reaching a branch)
+        let terminate = false;
+
         do {
           const startAddress = address;
           const startIndex = index;
 
           // Pull opcode out of table
           let opcode = Table.InstructionTable;
-          while (Array.isArray(opcode)) opcode = Table.InstructionTable[i8()];
+          while (Array.isArray(opcode)) opcode = opcode[i8()];
 
           let operation;
           let parameters;
@@ -228,16 +231,22 @@ export default class Tracer extends EventTarget {
             operation = op;
             parameters = args.map(arg);
 
-            if (condition !== Table.Condition.NONE) parameters.unshift(Conditions[opcode.condition]);
+            if (condition !== Table.Condition.NONE) {
+              parameters.unshift(Conditions[opcode.condition]);
+            }
 
             if (index > data.length) {
               operation = IllegalInstruction;
               parameters = [];
               index = data.length;
+              terminate = true;
+            } else if(BreakInstructions.indexOf(operation) >= 0) {
+              terminate = true;
             }
           } else {
             operation = IllegalInstruction;
             parameters = [];
+            terminate = true;
           }
 
           // Format raw data
@@ -249,9 +258,7 @@ export default class Tracer extends EventTarget {
           trace = this.trace[address];;
 
           render.push({ operation, startAddress, parameters, raw });
-
-          if (BreakInstructions.indexOf(opcode) >= 0) break ;
-        } while (index < data.length);
+        } while (index < data.length && !terminate);
       } else if (data.length - index >= 2 && trace & TraceAccess.WORD_LO) {
         const startAddress = address;
         const parameters = [];
@@ -263,7 +270,7 @@ export default class Tracer extends EventTarget {
           if (trace & TraceAccess.VECTOR && this.labels[word]) {
             parameters.push(this.labels[word])
           } else {
-            parameters.push(`\$${format(word, 4)}`);
+            parameters.push(`0${format(word, 4)}h`);
           }
 
           trace = this.trace[address];
@@ -275,7 +282,7 @@ export default class Tracer extends EventTarget {
         const parameters = [];
 
         do {
-          parameters.push(`\$${format(i8(), 2)}`);
+          parameters.push(`0${format(i8(), 2)}h`);
           trace = this.trace[address];
         } while (parameters.length < MAX_DATA_BYTES && index < data.length && !this.labels[address] && !(this.trace[address] & (TraceAccess.WORD_LO | TraceAccess.INSTRUCTION)));
         render.push({ operation: "DB", address: startAddress, parameters });
