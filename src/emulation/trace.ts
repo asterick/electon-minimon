@@ -19,6 +19,37 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 import Minimon from '.';
 import * as Table from '../core/instructions';
 
+const MAX_DATA_WORDS = 8;
+const MAX_DATA_BYTES = 16;
+const IllegalInstruction = "illegal"
+
+const BreakInstructions = [
+	"CARS",	"JRS",	"CARL",	"JRL",	"JP",	"DJR", IllegalInstruction
+];
+
+const Conditions = {
+  [Table.Condition.LESS_THAN]: 'LT',
+  [Table.Condition.LESS_EQUAL]: 'LE',
+  [Table.Condition.GREATER_THAN]: 'GT',
+  [Table.Condition.GREATER_EQUAL]: 'LE',
+  [Table.Condition.OVERFLOW]: 'V',
+  [Table.Condition.NOT_OVERFLOW]: 'NV',
+  [Table.Condition.POSITIVE]: 'P',
+  [Table.Condition.MINUS]: 'M',
+  [Table.Condition.CARRY]: 'C',
+  [Table.Condition.NOT_CARRY]: 'NC',
+  [Table.Condition.ZERO]: 'Z',
+  [Table.Condition.NOT_ZERO]: 'NZ',
+  [Table.Condition.SPECIAL_FLAG_0]: 'F0',
+  [Table.Condition.SPECIAL_FLAG_1]: 'F1',
+  [Table.Condition.SPECIAL_FLAG_2]: 'F2',
+  [Table.Condition.SPECIAL_FLAG_3]: 'F3',
+  [Table.Condition.NOT_SPECIAL_FLAG_0]: 'NF0',
+  [Table.Condition.NOT_SPECIAL_FLAG_1]: 'NF1',
+  [Table.Condition.NOT_SPECIAL_FLAG_2]: 'NF2',
+  [Table.Condition.NOT_SPECIAL_FLAG_3]: 'NF3',
+};
+
 function BIT(n:number) {
   return 1 << n;
 }
@@ -51,17 +82,20 @@ export enum TraceAccess {
 }
 
 export default class Tracer extends EventTarget {
-  private tracedAccess:Uint32Array;
+  private trace:Uint32Array;
   private traceBank:Object;
-  private dirty:boolean;
+  private dirty:Object;
+  private labels:Object;
 
   constructor(system:Minimon) {
     super();
 
-    this.tracedAccess = new Uint32Array(0x200000);
-    this.dirty = true;
+    this.trace = new Uint32Array(0x200000);
+    this.dirty = {};
+    this.labels = {};
+
     this.traceBank = {
-      bios: { dirty: true, data: system.state.bios, address: 0x0000, name: "System BIOS ($000000~$000FFF)" },
+      bios: { dirty: true, data: system.state.buffers.bios, address: 0x0000, name: "System BIOS ($000000~$000FFF)" },
       ram:  { dirty: true, data: system.state.ram, address: 0x1000, name: "System RAM ($001000~$001FFF)" },
     };
 
@@ -87,53 +121,184 @@ export default class Tracer extends EventTarget {
       };
     };
 
-    for (let i = 0x1000; i < this.traceAccess.length; i++) {
-      this.traceAccess[i] = TraceAccess.NONE;
+    for (let i = 0x1000; i < this.trace.length; i++) {
+      this.trace[i] = TraceAccess.NONE;
     }
-
-    // Prerender all pages so we don't get stampeded with events
-    Object.keys(this.traceBank).forEach((bank) => this.render(bank));
   }
 
   getPages() {
     return Object.keys(this.traceBank).map((value) => ({ value, label: this.traceBank[value].name }))
   }
 
-  render(bank) {
-    if (!this.traceBank[bank].dirty) {
-      return this.traceBank[bank].render;
+  render(page) {
+    const bank = this.traceBank[page];
+
+    if (!bank.dirty) {
+      return bank.render;
     }
 
-    this.traceBank[bank].dirty = false;
-    let render = this.traceBank[bank].render = [];
-    let { start, end, data } = this.traceBank[bank];
+    bank.dirty = false;
+    let render = bank.render = [];
+    let { address, data } = bank;
+    let index = 0;
 
-    function i8() { return data[start++] }
+    function i8() { return address++, data[index++] }
     function i16() { return i8() | (i8() << 8) }
     function s8() { return i8() << 24 >> 24 }
     function s16() { return i16() << 16 >> 16 }
 
-    // TODO: GENERATE DISASSEMBLY / DATA BLOCKS HERE
+    function pcRelative(v) {
+      if (v & 0x8000) {
+        return (address & ~0x7FFF) | (v & 0x7FFF);
+      } else {
+        return v;
+      }
+    }
+
+    function format(i, d) {
+      return i.toString(16).toUpperCase();
+    }
+
+    function arg(arg) {
+      let val;
+
+      switch (arg) {
+        case Table.Argument.REGS_ALL: return 'ALL';
+        case Table.Argument.REGS_ALE: return 'ALE';
+        case Table.Argument.REG_A: return 'A';
+        case Table.Argument.REG_B: return 'B';
+        case Table.Argument.REG_L: return 'L';
+        case Table.Argument.REG_H: return 'H';
+        case Table.Argument.REG_BA: return 'BA';
+        case Table.Argument.REG_HL: return 'HL';
+        case Table.Argument.REG_IX: return 'IX';
+        case Table.Argument.REG_IY: return 'IY';
+        case Table.Argument.REG_NB: return 'NB';
+        case Table.Argument.REG_BR: return 'BR';
+        case Table.Argument.REG_EP: return 'EP';
+        case Table.Argument.REG_IP: return 'IP';
+        case Table.Argument.REG_XP: return 'XP';
+        case Table.Argument.REG_YP: return 'YP';
+        case Table.Argument.REG_SC: return 'SC';
+        case Table.Argument.REG_SP: return 'SP';
+        case Table.Argument.REG_PC: return 'PC';
+        case Table.Argument.MEM_HL: return '[HL]';
+        case Table.Argument.MEM_IX: return '[IX]';
+        case Table.Argument.MEM_IY: return '[IY]';
+        case Table.Argument.MEM_IX_OFF: return '[IX+L]';
+        case Table.Argument.MEM_IY_OFF: return '[IY+L]';
+        case Table.Argument.MEM_SP_DISP:
+          val = s8();
+          return `[SP${val > 0 ? '+' : ''}${val}]`;
+        case Table.Argument.MEM_IX_DISP:
+          val = s8();
+          return `[IX${val > 0 ? '+' : ''}${val}]`;
+        case Table.Argument.MEM_IY_DISP:
+          val = s8();
+          return `[IY${val > 0 ? '+' : ''}${val}]`;
+        case Table.Argument.MEM_ABS16: return `[${format(i16(), 4)}h]`;
+        case Table.Argument.MEM_BR: return `[BR:${format(i8(), 2)}h]`;
+        case Table.Argument.MEM_VECTOR: return `[${format(i8(), 2)}h]`;
+        case Table.Argument.IMM_8: return `#x${i8().toString(16).toUpperCase()}h`;
+        case Table.Argument.IMM_16: return `#y${i16().toString(16).toUpperCase()}h`;
+        case Table.Argument.REL_8: return pcRelative(s8());
+        case Table.Argument.REL_16: return pcRelative(s16());
+      }
+    }
+
+    let trace = this.trace[address];
+    while (index < data.length) {
+      if (trace & TraceAccess.INSTRUCTION) {
+        // TOOD: THIS SHOULD CHECK IF INSTRUCTION WILL CROSS INTO NEXT PAGE
+        // Generate instructions (until reaching a branch)
+        do {
+          const startAddress = address;
+          const startIndex = index;
+
+          // Pull opcode out of table
+          let opcode = Table.InstructionTable;
+          while (Array.isArray(opcode)) opcode = Table.InstructionTable[i8()];
+
+          let operation;
+          let parameters;
+
+          if (opcode) {
+            const { op, condition, args } = opcode;
+
+            operation = op;
+            parameters = args.map(arg);
+
+            if (condition !== Table.Condition.NONE) parameters.unshift(Conditions[opcode.condition]);
+
+            if (index > data.length) {
+              operation = IllegalInstruction;
+              parameters = [];
+              index = data.length;
+            }
+          } else {
+            operation = IllegalInstruction;
+            parameters = [];
+          }
+
+          // Format raw data
+          let raw = [];
+          for (let i = startIndex; i < index; i++) {
+            raw.push(format(data[i], 2));
+          }
+
+          trace = this.trace[address];;
+
+          render.push({ operation, startAddress, parameters, raw });
+
+          if (BreakInstructions.indexOf(opcode) >= 0) break ;
+        } while (index < data.length);
+      } else if (data.length - index >= 2 && trace & TraceAccess.WORD_LO) {
+        const startAddress = address;
+        const parameters = [];
+
+        // Unroll word data
+        do {
+          const word = i16();
+
+          if (trace & TraceAccess.VECTOR && this.labels[word]) {
+            parameters.push(this.labels[word])
+          } else {
+            parameters.push(`\$${format(word, 4)}`);
+          }
+
+          trace = this.trace[address];
+        } while (parameters.length < MAX_DATA_WORDS && data.length - index >= 2 && !this.labels[address] && (trace & TraceAccess.WORD_LO));
+
+        render.push({ operation: "DW", address: startAddress, parameters });
+      } else {
+        const startAddress = address;
+        const parameters = [];
+
+        do {
+          parameters.push(`\$${format(i8(), 2)}`);
+          trace = this.trace[address];
+        } while (parameters.length < MAX_DATA_BYTES && index < data.length && !this.labels[address] && !(this.trace[address] & (TraceAccess.WORD_LO | TraceAccess.INSTRUCTION)));
+        render.push({ operation: "DB", address: startAddress, parameters });
+      }
+    }
+
+    render.forEach((block) => { if (this.labels[block.startAddress]) block.label = this.labels[block.startAddress] })
+    console.log(render);
 
     return render;
   }
 
   update() {
-    if (!this.dirty) return ;
-    this.dirty = false;
-
-
-    const dirty = Object.keys(this.traceBank)
+    Object.keys(this.traceBank)
       .forEach((page) => {
-        const bank = this.traceBank[page];
-        if (!bank.dirty) return ;
-
-        this.dispatchEvent(new CustomEvent(`trace:changed[${page}]`, { detail: bank }));
+        const detail = this.traceBank[page];
+        this.dispatchEvent(new CustomEvent(`trace:changed[${page}]`, { detail }));
       });
-  }
+      this.dirty = {};
+    }
 
   traceAccess(cpu: number, address: number, kind: number, data: number) {
-    const prev = this.tracedAccess[address];
+    const prev = this.trace[address];
     const mask = ~(TraceAccess.READ | TraceAccess.WRITE);
 
     // We do not need to trace register writes
@@ -147,13 +312,17 @@ export default class Tracer extends EventTarget {
         return ;
       }
 
-      this.tracedAccess[address] = kind & mask;
+      this.trace[address] = kind & mask;
     } else {
-      this.tracedAccess[address] |= kind & mask;
+      this.trace[address] |= kind & mask;
+    }
+
+    if (kind & TraceAccess.BRANCH_TARGET && this.labels[address] === undefined) {
+      this.labels[address] = `loc_${address.toString(16)}`;
     }
 
     // Mark altered banks as dirty
-    if (prev !== this.tracedAccess[address]) {
+    if (prev !== this.trace[address]) {
       let bank;
 
       if (address < 0x1000) {
@@ -164,7 +333,7 @@ export default class Tracer extends EventTarget {
         bank = `rom:${address >> 15}`;
       }
 
-      this.traceBank[bank].dirty = this.dirty = true;
+      this.traceBank[bank].dirty = this.dirty[bank] = true;
     }
   }
 }

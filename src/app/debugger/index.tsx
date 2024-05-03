@@ -97,7 +97,7 @@ export default function Debugger() {
       </ControlGroup>
 
       <div className="body">
-        <div className="disassembly">{/* enter disassembly here */}</div>
+        <div className="disassembly"></div>
         <div className="info">
           <div className="registers">asdf</div>
           <div className="stack">asdf</div>

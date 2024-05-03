@@ -28,16 +28,6 @@ extern "C" const char *get_version()
 
 extern "C" void cpu_reset(Machine::State &cpu)
 {
-  cpu.reg.pc = cpu_read16(cpu, 0x0000, TRACE_VECTOR);
-  cpu_writeSC(cpu, 0xC0);
-  cpu.reg.ep = 0xFF;
-  cpu.reg.xp = 0x00;
-  cpu.reg.yp = 0x00;
-  cpu.reg.nb = 0x01;
-
-  cpu.status = Machine::STATUS_NORMAL;
-  cpu.osc1_overflow = 0;
-
   Control::reset(cpu.ctrl);
   IRQ::reset(cpu);
   LCD::reset(cpu.lcd);
@@ -48,6 +38,17 @@ extern "C" void cpu_reset(Machine::State &cpu)
   Input::reset(cpu.input);
   GPIO::reset(cpu.gpio);
   Audio::reset(cpu.audio);
+
+  cpu_writeSC(cpu, 0xC0);
+  cpu.reg.ep = 0xFF;
+  cpu.reg.xp = 0x00;
+  cpu.reg.yp = 0x00;
+  cpu.reg.nb = 0x01;
+
+  cpu.status = Machine::STATUS_NORMAL;
+  cpu.osc1_overflow = 0;
+
+  IRQ::trigger(cpu, IRQ::IRQ_RESET);
 }
 
 extern "C" void update_inputs(Machine::State &cpu, uint16_t value)
