@@ -21,10 +21,6 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include "machine.h"
 #include "debug.h"
 
-static const uint8_t bios[0x2000] = {
-#include "bios.h"
-};
-
 extern "C" const char *get_version()
 {
   return "0.2.0";
@@ -229,7 +225,7 @@ extern "C" uint8_t cpu_read(Machine::State &cpu, uint32_t address)
 {
   if (address <= 0x0FFF)
   {
-    return cpu.bus_cap = bios[address];
+    return cpu.bus_cap = cpu.bios[address];
   }
   else if (address <= 0x1FFF)
   {

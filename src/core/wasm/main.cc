@@ -64,7 +64,10 @@ struct FieldDecl
 
 extern "C" Machine::State *const get_machine()
 {
-  static Machine::State machine_state;
+  static Machine::State machine_state = {
+      .bios = {
+#include "bios.h"
+      }};
   return &machine_state;
 }
 
@@ -269,6 +272,8 @@ static const StructDecl MachineState = {
         STRUCT("irq", Machine::State, irq, IrqState),
         STRUCT("tim256", Machine::State, tim256, Tim256State),
         FIELD("ram", Machine::State, ram, TYPE_UINT8, SIZE(0x1000)),
+        FIELD("bios", Machine::State, bios, TYPE_UINT8, SIZE(0x1000)),
+        FIELD("system_mem", Machine::State, system_mem, TYPE_UINT8, SIZE(0x2000)),
         STRUCT("lcd", Machine::State, lcd, LcdState),
         STRUCT("input", Machine::State, input, InputState),
         STRUCT("blitter", Machine::State, blitter, BlitterState),

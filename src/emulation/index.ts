@@ -19,7 +19,8 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 import { struct } from './state';
 import Audio from './audio';
 
-import AssemblyCore from '../../../assets/libminimon.wasm';
+import AssemblyCore from '../../assets/libminimon.wasm';
+import Tracer from './trace';
 
 const KEYBOARD_CODES = {
   67: 0b00000001,
@@ -35,35 +36,6 @@ const KEYBOARD_CODES = {
 const INPUT_CART_N = 0b1000000000;
 const CPU_FREQ = 4000000;
 
-function BIT(n:number) {
-  return 1 << n;
-}
-
-export enum TraceAccess {
-  // Category: Access Type
-  WORD_LO = BIT(0),
-  WORD_HI = BIT(1),
-  DATA = BIT(2),
-  INSTRUCTION = BIT(3),
-  EX_INST = BIT(4),
-  IMMEDIATE = BIT(5),
-  STACK = BIT(6),
-
-  // Category: Argument type
-  VECTOR = BIT(10),
-  BRANCH_TARGET = BIT(11),
-  OFFSET = BIT(12),
-
-  // Category: Data type
-  TILE_DATA = BIT(20),
-  SPRITE_DATA = BIT(21),
-  RETURN_ADDRESS = BIT(22),
-
-  // Category: Access direction
-  READ = BIT(30),
-  WRITE = BIT(31),
-}
-
 export default class Minimon extends EventTarget {
   public state: Object | null;
   public audio: Audio;
@@ -72,8 +44,7 @@ export default class Minimon extends EventTarget {
   private systemTime: number;
   private breakpoints: Array<number>;
   private inputState: number;
-  private tracedAccess: Uint32Array;
-  private traceBankUpdate: Object;
+  private tracer: Tracer;
   private exports;
   private runTimer;
 
@@ -91,9 +62,6 @@ export default class Minimon extends EventTarget {
     this.state = null;
     this.systemTime = Date.now();
 
-    this.tracedAccess = new Uint32Array(0x200000);
-    this.traceBankUpdate = {};
-
     document.body.addEventListener('keydown', (e: KeyboardEvent) => {
       this.inputState &= ~(KEYBOARD_CODES[e.keyCode] || 0);
       this.updateInput();
@@ -110,7 +78,20 @@ export default class Minimon extends EventTarget {
 
     const request = await fetch(AssemblyCore);
     const wasm = await WebAssembly.instantiate(await request.arrayBuffer(), {
-      env: inst,
+      env: {
+        trace_access: (cpu: number, address: number, kind: number, data: number) => inst.tracer.traceAccess(cpu, address, kind, data),
+        audio_push: () => {
+          inst.audio.push(inst.state.buffers.audio);
+        },
+        debug_print: (start: number) => {
+          const utf8decoder = new TextDecoder();
+          const end = inst.machineBytes?.indexOf(0, start);
+
+          const string = utf8decoder.decode(
+            new Uint8Array(inst.machineBytes.buffer, start, end - start),
+          );
+        },
+      },
     });
 
     inst.exports = wasm.instance.exports;
@@ -123,6 +104,7 @@ export default class Minimon extends EventTarget {
       inst.exports.get_description(),
       inst.cpu_state,
     );
+    inst.tracer = new Tracer(inst);
 
     // Setup initial palette
     for (let i = 0; i <= 0xff; i++) {
@@ -182,10 +164,8 @@ export default class Minimon extends EventTarget {
   };
 
   update() {
-    this.dispatchEvent(new CustomEvent('update:trace', { banks: this.traceBankUpdate }))
     this.dispatchEvent(new CustomEvent('update:state', { detail: this.state }));
-
-    this.traceBankUpdate = {};
+    this.tracer.update();
   }
 
   private updateInput() {
@@ -266,54 +246,11 @@ export default class Minimon extends EventTarget {
   }
 
   eject() {
-    this.tracedAccess = new Uint32Array(0x200000);
+    inst.tracer = new Tracer(inst);
+
     this.inputState |= INPUT_CART_N;
     this.updateInput();
   }
-
-  audio_push = () => {
-    this.audio.push(this.state.buffers.audio);
-  };
-
-  debug_print = (start: number) => {
-    const utf8decoder = new TextDecoder();
-    const end = this.machineBytes?.indexOf(0, start);
-
-    const string = utf8decoder.decode(
-      new Uint8Array(this.machineBytes.buffer, start, end - start),
-    );
-  };
-
-  trace_access = (cpu: number, address: number, kind: number, data: number) => {
-    const prev = this.tracedAccess[address];
-
-    // We do not need to trace register writes
-    if (address >= 0x2000 && address <= 0x20FF) {
-      return ;
-    }
-
-    // Trace accesses, with clear on write to ram
-    if (kind & TraceAccess.WRITE) {
-      if (address >= 0x2100) {
-        return ;
-      }
-
-      this.tracedAccess[address] = kind;
-    } else {
-      this.tracedAccess[address] |= kind;
-    }
-
-    // Mark altered banks as dirty
-    if (prev !== this.tracedAccess[address]) {
-      let bank = address >> 15;
-      if (address < 0x1000) {
-        bank = "bios";
-      } else if (address < 0x2000) {
-        bank = "ram";
-      }
-      this.traceBankUpdate[bank] = true;
-    }
-  };
 
   // WASM shim functions
   translate(address: number) {
