@@ -205,6 +205,34 @@ export default class MenuBuilder {
         },
       },
       {
+        label: 'Register Viewer',
+        accelerator: 'Alt+2',
+        click: () => {
+          this.mainWindow?.webContents.send('open-view', 'registers');
+        },
+      },
+      {
+        label: 'Stack Viewer',
+        accelerator: 'Alt+3',
+        click: () => {
+          this.mainWindow?.webContents.send('open-view', 'stack');
+        },
+      },
+      {
+        label: 'Blitter Explorer',
+        accelerator: 'Alt+4',
+        click: () => {
+          this.mainWindow?.webContents.send('open-view', 'blitter');
+        },
+      },
+      {
+        label: 'Memory Viewer',
+        accelerator: 'Alt+5',
+        click: () => {
+          this.mainWindow?.webContents.send('open-view', 'memory');
+        },
+      },
+      {
         label: 'Settings',
         accelerator: 'Alt+0',
         click: () => {

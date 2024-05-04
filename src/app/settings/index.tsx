@@ -91,12 +91,6 @@ export default function Settings() {
 
   return (
     <div className="settings">
-      <FormGroup>
-        <ControlGroup fill={true}>
-          <Button onClick={resetDefaults}>Reset to Default</Button>
-        </ControlGroup>
-      </FormGroup>
-
       <FormGroup label="Theme">
         <HTMLSelect
             fill
@@ -176,6 +170,11 @@ export default function Settings() {
         <WrappedColorPicker />
       </GradientPicker>
 
+      <FormGroup style={{paddingTop: "10px"}}>
+        <ControlGroup fill={true}>
+          <Button onClick={resetDefaults}>Reset to Default</Button>
+        </ControlGroup>
+      </FormGroup>
     </div>
   );
 }

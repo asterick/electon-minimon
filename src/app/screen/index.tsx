@@ -216,27 +216,5 @@ export default function Screen() {
     };
   });
 
-  function onDragOver(e) {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'copy';
-  }
-
-  function onDrop(e) {
-    e.preventDefault();
-
-    const file = e.dataTransfer.files[0];
-    const reader = new FileReader();
-
-    reader.onload = (loadEvt) => {
-      context.system.load(loadEvt.target?.result);
-    };
-
-    reader.readAsArrayBuffer(file);
-  }
-
-  return (
-    <div className="screen" onDragOver={onDragOver} onDrop={onDrop}>
-      <canvas ref={canvasRef} />
-    </div>
-  );
+  return <canvas className="screen" ref={canvasRef} />
 }

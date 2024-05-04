@@ -6,7 +6,7 @@
   align-items: stretch;
   top: 0;
   left: 0;
-  position: absolute;
+  position: relative;
   width: 100%;
   height: 100%;
 
@@ -17,12 +17,6 @@
     .bp5-control {
       margin: 0 5px;
     }
-  }
-
-  .body {
-    display: flex;
-    flex: 1 0 auto;
-    flex-direction: row;
   }
 
   .disassembly {
@@ -136,22 +130,5 @@
     .condition {
       color: $vermilion4;
     }
-  }
-
-  .info {
-    display: flex;
-    flex: 0 0 auto;
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .registers {
-    display: flex;
-    flex: 0 0 auto;
-  }
-
-  .stack {
-    display: flex;
-    flex: 1 0 auto;
   }
 }

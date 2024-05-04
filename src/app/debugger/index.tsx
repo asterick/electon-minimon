@@ -18,7 +18,8 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 import { useContext, useEffect, useState, useRef } from 'react';
 import { Button, Tooltip, ControlGroup, HTMLSelect, Switch } from '@blueprintjs/core';
-import {AutoSizer, List} from 'react-virtualized';
+import { AutoSizer, List } from 'react-virtualized';
+
 import SystemContext from '../context';
 import './style.css';
 
@@ -137,24 +138,18 @@ export default function Debugger() {
         <Switch large={true} checked={followPC} onChange={(e) => setFollowPC(!followPC)} label="Follow PC" />
       </ControlGroup>
 
-      <div className="body">
-        <div className="disassembly">
-          <AutoSizer>
-            {({height, width}) => (
-              <List
-                height={height}
-                rowCount={disassembly.length}
-                rowHeight={20}
-                rowRenderer={rowRenderer}
-                width={width}
-              />
-            )}
-          </AutoSizer>
-        </div>
-        <div className="info">
-          <div className="registers">asdf</div>
-          <div className="stack">asdf</div>
-        </div>
+      <div className="disassembly">
+        <AutoSizer>
+          {({height, width}) => (
+            <List
+              height={height}
+              rowCount={disassembly.length}
+              rowHeight={20}
+              rowRenderer={rowRenderer}
+              width={width}
+            />
+          )}
+        </AutoSizer>
       </div>
     </div>
   );

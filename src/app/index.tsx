@@ -20,8 +20,13 @@ import { useEffect, useState } from 'react';
 import { DockviewReact } from 'dockview';
 
 import Screen from './screen';
-import Settings from './settings';
 import Debugger from './debugger';
+import Registers from './registers';
+import Stack from './stack';
+import Memory from './memory';
+import Blitter from './blitter';
+import Settings from './settings';
+
 import SystemContext from './context';
 
 import './style.scss';
@@ -50,17 +55,41 @@ const panels = {
     component: 'debugger',
     title: 'Debugger',
   },
+  stack: {
+    id: 'stack',
+    component: 'stack',
+    title: 'Stack',
+  },
+  registers: {
+    id: 'registers',
+    component: 'registers',
+    title: 'Registers',
+  },
+  memory: {
+    id: 'memory',
+    component: 'memory',
+    title: 'Memory',
+  },
+  blitter: {
+    id: 'blitter',
+    component: 'blitter',
+    title: 'Blitter',
+  },
   settings: {
     id: 'settings',
     component: 'settings',
     title: 'Settings',
-  }
+  },
 }
 
 const components = {
   screen: (props: IDockviewPanelProps) => <Screen />,
   debugger: (props: IDockviewPanelProps) => <Debugger />,
-  settings: (props: IDockviewPanelProps) => <Settings />
+  stack: (props: IDockviewPanelProps) => <Stack />,
+  registers: (props: IDockviewPanelProps) => <Registers />,
+  memory: (props: IDockviewPanelProps) => <Memory />,
+  blitter: (props: IDockviewPanelProps) => <Blitter />,
+  settings: (props: IDockviewPanelProps) => <Settings />,
 };
 
 export function App({ store, system }) {
@@ -135,9 +164,13 @@ export function App({ store, system }) {
     const api: DockviewApi = event.api;
 
     function addPanel(name) {
+      const panel = api.getPanel(name);
 
-      if (api.getPanel(name)) return ;
-      api.addPanel(panels[name]);
+if (panel) {
+        console.log(panel);
+      } else if (panels[name]) {
+        api.addPanel(panels[name]);
+      }
     }
 
     api.onDidLayoutChange(() => {
