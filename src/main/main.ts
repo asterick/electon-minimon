@@ -78,7 +78,6 @@ const createWindow = async () => {
   };
 
   const windowSize = store.get('settings:windowSize');
-  console.log(windowSize);
 
   mainWindow = new BrowserWindow({
     show: false,
@@ -88,12 +87,12 @@ const createWindow = async () => {
         ? path.join(__dirname, 'preload.js')
         : path.join(__dirname, '../../.erb/dll/preload.js'),
     },
-    ... windowSize
+    ...windowSize,
   });
 
-  mainWindow.on('resize', () =>{
-    const [ width, height ] = mainWindow.getSize();
-    store.set('settings:windowSize', {width, height});
+  mainWindow.on('resize', () => {
+    const [width, height] = mainWindow.getSize();
+    store.set('settings:windowSize', { width, height });
   });
 
   mainWindow.loadURL(resolveHtmlPath('index.html'));
@@ -106,7 +105,10 @@ const createWindow = async () => {
       mainWindow.minimize();
     } else {
       mainWindow.show();
-      mainWindow?.webContents.send('dark-mode', nativeTheme.shouldUseDarkColors);
+      mainWindow?.webContents.send(
+        'dark-mode',
+        nativeTheme.shouldUseDarkColors,
+      );
     }
   });
 
@@ -155,5 +157,3 @@ app
 nativeTheme.on('updated', (e) => {
   mainWindow?.webContents.send('dark-mode', nativeTheme.shouldUseDarkColors);
 });
-
-

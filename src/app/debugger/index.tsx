@@ -17,7 +17,13 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
 import { useContext, useEffect, useState, useRef } from 'react';
-import { Button, Tooltip, ControlGroup, HTMLSelect, Switch } from '@blueprintjs/core';
+import {
+  Button,
+  Tooltip,
+  ControlGroup,
+  HTMLSelect,
+  Switch,
+} from '@blueprintjs/core';
 import { AutoSizer, List } from 'react-virtualized';
 
 import SystemContext from '../context';
@@ -38,64 +44,66 @@ export default function Debugger() {
   const [pageNames, setPageNames] = useState(context.system.tracer.getPages());
   const [followPC, setFollowPC] = useState(true);
   const [page, setPage] = useState('bios');
-  const [disassembly, setDisassembly] = useState(context.system.tracer.render(page));
+  const [disassembly, setDisassembly] = useState(
+    context.system.tracer.render(page),
+  );
   const [breakpoints, setBreakpoints] = useState(context.system.breakpoints);
 
-  function updateState (e: CustomEvent) {
+  function updateState(e: CustomEvent) {
     setState(e.detail);
 
     if (followPC) {
-      let pc = context.system.physicalPC();
+      const pc = context.system.physicalPC();
       let newPage;
 
-      if (pc <= 0x0FFF)
-        newPage = "bios";
-      else if (pc <= 0x1FFF)
-        newPage = "ram";
-      else
-        newPage = `rom:${pc >> 15}`
+      if (pc <= 0x0fff) newPage = 'bios';
+      else if (pc <= 0x1fff) newPage = 'ram';
+      else newPage = `rom:${pc >> 15}`;
 
       setPage(newPage);
       setDisassembly(context.system.tracer.render(newPage));
     }
   }
-  function updateRunning (e: CustomEvent) {
+  function updateRunning(e: CustomEvent) {
     setRunning(e.detail);
   }
   function updatePages() {
     setPageNames(context.system.tracer.getPages());
   }
-  function updateTrace (e: CustomEvent) {
+  function updateTrace(e: CustomEvent) {
     setDisassembly(context.system.tracer.render(page));
   }
-  function updateBreakpoints (e: CustomEvent) {
-    setBreakpoints([... e.detail]);
+  function updateBreakpoints(e: CustomEvent) {
+    setBreakpoints([...e.detail]);
   }
 
   function debuggerHotKeys(e: KeyboardEvent) {
-    const elems = document.querySelectorAll("[data-address]:hover");
+    const elems = document.querySelectorAll('[data-address]:hover');
 
     if (elems.length > 0) {
       const address = parseInt(elems[elems.length - 1].dataset.address);
 
       switch (e.key) {
-      case 'b':
-        context.system.toggleBreakpoint(address);
-        break ;
-      case 'u':
-        context.system.tracer.forceTrace(address, TraceAccess.NONE);
-        break ;
-      case 'c':
-        context.system.tracer.forceTrace(address, TraceAccess.INSTRUCTION);
-        break ;
-      case 'd':
-        context.system.tracer.forceTrace(address, TraceAccess.DATA);
-        break ;
-      case 'w':
-        context.system.tracer.forceTrace(address, TraceAccess.DATA | TraceAccess.WORD_LO);
-        break ;
-      default:
-        return ;
+        case 'b':
+          context.system.toggleBreakpoint(address);
+          break;
+        case 'u':
+          context.system.tracer.forceTrace(address, TraceAccess.NONE);
+          break;
+        case 'c':
+          context.system.tracer.forceTrace(address, TraceAccess.INSTRUCTION);
+          break;
+        case 'd':
+          context.system.tracer.forceTrace(address, TraceAccess.DATA);
+          break;
+        case 'w':
+          context.system.tracer.forceTrace(
+            address,
+            TraceAccess.DATA | TraceAccess.WORD_LO,
+          );
+          break;
+        default:
+          return;
       }
 
       e.preventDefault();
@@ -105,7 +113,7 @@ export default function Debugger() {
   useEffect(() => {
     if (!ref.current) {
       ref.current = {
-        prevPage: page
+        prevPage: page,
       };
 
       document.body.addEventListener('keydown', debuggerHotKeys);
@@ -114,39 +122,70 @@ export default function Debugger() {
       context.system.addEventListener('update:running', updateRunning);
       context.system.addEventListener('update:breakpoints', updateBreakpoints);
     } else {
-      context.system.tracer.removeEventListener(`trace:changed[${ref.current.prevPage}]`, updateTrace);
+      context.system.tracer.removeEventListener(
+        `trace:changed[${ref.current.prevPage}]`,
+        updateTrace,
+      );
     }
 
-    context.system.tracer.addEventListener(`trace:changed[${page}]`, updateTrace);
+    context.system.tracer.addEventListener(
+      `trace:changed[${page}]`,
+      updateTrace,
+    );
     ref.current.prevPage = page;
     setDisassembly(context.system.tracer.render(page));
 
     return () => {
       document.body.removeEventListener('keydown', debuggerHotKeys);
-      context.system.tracer.removeEventListener(`trace:changed[${page}]`, updateTrace);
-      context.system.removeEventListener('update:cartridgeChanged', updatePages);
+      context.system.tracer.removeEventListener(
+        `trace:changed[${page}]`,
+        updateTrace,
+      );
+      context.system.removeEventListener(
+        'update:cartridgeChanged',
+        updatePages,
+      );
       context.system.removeEventListener('update:state', updateState);
       context.system.removeEventListener('update:running', updateRunning);
-      context.system.removeEventListener('update:breakpoints', updateBreakpoints);
+      context.system.removeEventListener(
+        'update:breakpoints',
+        updateBreakpoints,
+      );
       ref.current = null;
     };
   });
 
-  function rowRenderer({key, index, style}) {
+  function rowRenderer({ key, index, style }) {
     const { address, label, operation, parameters, raw } = disassembly[index];
 
-    let padAddress = "00000"+address.toString(16).toUpperCase();
-    let className = "entry";
+    const padAddress = `00000${address.toString(16).toUpperCase()}`;
+    const className = 'entry';
 
     return (
-      <div className={className} data-address={address} key={key} style={style} onDoubleClick={() => context.system.toggleBreakpoint(address)}>
-        <span className="address">{padAddress.substring(padAddress.length - 6)}</span>
+      <div
+        className={className}
+        data-address={address}
+        key={key}
+        style={style}
+        onDoubleClick={() => context.system.toggleBreakpoint(address)}
+      >
+        <span className="address">
+          {padAddress.substring(padAddress.length - 6)}
+        </span>
         <span className="raw">{raw}</span>
         <span className="label">
-          {label && <><span className="identifier">{label}</span><span className="symbol">:</span></>}
+          {label && (
+            <>
+              <span className="identifier">{label}</span>
+              <span className="symbol">:</span>
+            </>
+          )}
         </span>
         <span className="operation">{operation}</span>
-        <span className="parameters" dangerouslySetInnerHTML={{__html: parameters}} />
+        <span
+          className="parameters"
+          dangerouslySetInnerHTML={{ __html: parameters }}
+        />
       </div>
     );
   }
@@ -157,39 +196,57 @@ export default function Debugger() {
   }`;
 
   if (breakpoints.length > 0) {
-    addressStyles += breakpoints.map((address) => `[data-address="${address}"] .operation:after`).join(", ") + "{ content: '\\2022'; }";
+    addressStyles += `${breakpoints
+      .map((address) => `[data-address="${address}"] .operation:after`)
+      .join(', ')}{ content: '\\2022'; }`;
   }
 
   return (
     <div className="debugger">
-      <style dangerouslySetInnerHTML={{__html: addressStyles }} />
+      <style dangerouslySetInnerHTML={{ __html: addressStyles }} />
       <ControlGroup className="toolbar">
-        <Tooltip content={running ? 'Stop' : 'Play'} compact={true}>
+        <Tooltip content={running ? 'Stop' : 'Play'} compact>
           <Button
             icon={running ? 'stop' : 'play'}
             onClick={() => {
               context.system.running = !running;
-            }} />
+            }}
+          />
         </Tooltip>
-        <Tooltip content="Reset" compact={true}>
+        <Tooltip content="Reset" compact>
           <Button icon="reset" onClick={() => context.system.reset()} />
         </Tooltip>
-        <Tooltip content="Step" compact={true}>
+        <Tooltip content="Step" compact>
           <Button icon="arrow-right" onClick={() => context.system.step()} />
         </Tooltip>
-        <Tooltip content="Step Over" compact={true}>
-          <Button icon="arrow-top-right" onClick={() => context.system.step()} />
+        <Tooltip content="Step Over" compact>
+          <Button
+            icon="arrow-top-right"
+            onClick={() => context.system.step()}
+          />
         </Tooltip>
-        <Tooltip content="Step Out" compact={true}>
+        <Tooltip content="Step Out" compact>
           <Button icon="drawer-right" onClick={() => context.system.step()} />
         </Tooltip>
-        <HTMLSelect fill={true} value={page} onChange={(e) => {setPage(e.target.value)}} options={pageNames} />
-        <Switch large={true} checked={followPC} onChange={(e) => setFollowPC(!followPC)} label="Follow PC" />
+        <HTMLSelect
+          fill
+          value={page}
+          onChange={(e) => {
+            setPage(e.target.value);
+          }}
+          options={pageNames}
+        />
+        <Switch
+          large
+          checked={followPC}
+          onChange={(e) => setFollowPC(!followPC)}
+          label="Follow PC"
+        />
       </ControlGroup>
 
       <div className="disassembly">
         <AutoSizer>
-          {({height, width}) => (
+          {({ height, width }) => (
             <List
               height={height}
               rowCount={disassembly.length}

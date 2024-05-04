@@ -41,9 +41,9 @@ const blendingTypeValues: OptionProps<string>[] = [
 ];
 
 const darkModeValues: OptionProps<string>[] = [
-  { value: "system", label: "System theme" },
-  { value: true, label: "Dark Mode" },
-  { value: false, label: "Light Mode" },
+  { value: 'system', label: 'System theme' },
+  { value: true, label: 'Dark Mode' },
+  { value: false, label: 'Light Mode' },
 ];
 
 export default function Settings() {
@@ -51,28 +51,30 @@ export default function Settings() {
 
   const [volume, setVolume] = useState(context.store.get('volume'));
   const [frames, setFrames] = useState(context.store.get('frames'));
-  const [blendingType, setBlendingType] = useState(context.store.get('blendingType'));
+  const [blendingType, setBlendingType] = useState(
+    context.store.get('blendingType'),
+  );
   const [weights, setWeights] = useState(context.store.get('weights'));
   const [intensity, setIntensity] = useState(context.store.get('intensity'));
   const [palette, setPalette] = useState(context.store.get('palette'));
   const [darkMode, setDarkMode] = useState(context.store.get('darkMode'));
 
   useEffect(() => {
-    context.store.set('volume',volume);
-    context.store.set('frames',frames);
-    context.store.set('blendingType',blendingType);
-    context.store.set('weights',weights);
+    context.store.set('volume', volume);
+    context.store.set('frames', frames);
+    context.store.set('blendingType', blendingType);
+    context.store.set('weights', weights);
     context.store.set('intensity', intensity);
-    context.store.set('palette',palette);
-    context.store.set('darkMode',darkMode);
+    context.store.set('palette', palette);
+    context.store.set('darkMode', darkMode);
   });
 
-  function resetDefaults () {
+  function resetDefaults() {
     context.store.set('volume', null);
     context.store.set('frames', null);
     context.store.set('blendingType', null);
     context.store.set('weights', null);
-    context.store.set('intensity',  null);
+    context.store.set('intensity', null);
     context.store.set('palette', null);
     context.store.set('darkMode', null);
 
@@ -83,22 +85,22 @@ export default function Settings() {
     setIntensity(context.store.get('intensity'));
     setPalette(context.store.get('palette'));
     setDarkMode(context.store.get('darkMode'));
-  };
+  }
 
-
-  const WrappedColorPicker = ({ onSelect, ...rest }) =>
-    <SketchPicker {...rest} disableAlpha onChange={(c) => onSelect(c.hex)} />
+  function WrappedColorPicker({ onSelect, ...rest }) {
+    return <SketchPicker {...rest} disableAlpha onChange={(c) => onSelect(c.hex)} />
+  }
 
   return (
     <div className="settings">
       <FormGroup label="Theme">
         <HTMLSelect
-            fill
-            value={darkMode}
-            iconName="caret-down"
-            options={darkModeValues}
-            onChange={(e) => setDarkMode(e.target.value)}
-            />
+          fill
+          value={darkMode}
+          iconName="caret-down"
+          options={darkModeValues}
+          onChange={(e) => setDarkMode(e.target.value)}
+        />
       </FormGroup>
 
       <FormGroup label="System Volume">
@@ -120,15 +122,14 @@ export default function Settings() {
           iconName="caret-down"
           options={blendingTypeValues}
           onChange={(e) => setBlendingType(e.target.value)}
-          />
+        />
       </FormGroup>
 
       {blendingType === 'custom' && (
         <FormGroup label="Frame Weights">
-          <ControlGroup fill={true}>
+          <ControlGroup fill>
             {weights.map((value, i) => (
               <Slider
-
                 key={i}
                 min={0.0}
                 max={1.0}
@@ -170,8 +171,8 @@ export default function Settings() {
         <WrappedColorPicker />
       </GradientPicker>
 
-      <FormGroup style={{paddingTop: "10px"}}>
-        <ControlGroup fill={true}>
+      <FormGroup style={{ paddingTop: '10px' }}>
+        <ControlGroup fill>
           <Button onClick={resetDefaults}>Reset to Default</Button>
         </ControlGroup>
       </FormGroup>

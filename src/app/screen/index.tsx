@@ -216,5 +216,5 @@ export default function Screen() {
     };
   });
 
-  return <canvas className="screen" ref={canvasRef} />
+  return <canvas className="screen" ref={canvasRef} />;
 }

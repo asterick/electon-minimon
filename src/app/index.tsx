@@ -35,7 +35,7 @@ const defaultSettings = {
   darkMode: null,
   volume: 0.5,
   frames: 8,
-  intensity: 0.80,
+  intensity: 0.8,
   setBlendingType: 'logorithmic',
   weights: [1, 0, 0, 0, 0, 0, 0, 0],
   palette: [
@@ -80,7 +80,7 @@ const panels = {
     component: 'settings',
     title: 'Settings',
   },
-}
+};
 
 const components = {
   screen: (props: IDockviewPanelProps) => <Screen />,
@@ -115,7 +115,7 @@ export function App({ store, system }) {
         weights = getStore('weights');
     }
 
-    const palette = getStore('palette').map(({offset, color}) => ({
+    const palette = getStore('palette').map(({ offset, color }) => ({
       offset: Number(offset),
       r: parseInt(color.substring(1, 3), 16) / 255.0,
       g: parseInt(color.substring(3, 5), 16) / 255.0,
@@ -139,20 +139,30 @@ export function App({ store, system }) {
     rebuild();
   }
 
-  if (typeof window !== 'undefined' && typeof window.process === 'object' && window.process.type === 'renderer') {
+  if (
+    typeof window !== 'undefined' &&
+    typeof window.process === 'object' &&
+    window.process.type === 'renderer'
+  ) {
     // Electron specific event handlers
     useEffect(() => {
-      window.electron.ipcRenderer.on('dark-mode', (darkMode) => setSystemDarkMode(darkMode));
+      window.electron.ipcRenderer.on('dark-mode', (darkMode) =>
+        setSystemDarkMode(darkMode),
+      );
       window.electron.getDarkMode();
     });
   } else {
     // Browser specific event handlers
     useEffect(() => {
       if (window.matchMedia) {
-        setSystemDarkMode(window.matchMedia('(prefers-color-scheme: dark)').matches);
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
-          setSystemDarkMode(event.matches);
-        });
+        setSystemDarkMode(
+          window.matchMedia('(prefers-color-scheme: dark)').matches,
+        );
+        window
+          .matchMedia('(prefers-color-scheme: dark)')
+          .addEventListener('change', (event) => {
+            setSystemDarkMode(event.matches);
+          });
       }
     });
   }
@@ -161,13 +171,13 @@ export function App({ store, system }) {
    * DockView Cruft
    */
   function onReady(event: DockviewReadyEvent) {
-    const api: DockviewApi = event.api;
+    const { api } = event;
 
     function addPanel(name) {
       const panel = api.getPanel(name);
 
-if (panel) {
-        console.log(panel);
+      if (panel) {
+        // TODO: Focus panel here
       } else if (panels[name]) {
         api.addPanel(panels[name]);
       }
@@ -176,9 +186,9 @@ if (panel) {
     api.onDidLayoutChange(() => {
       addPanel('screen');
       setStore('layout', api.toJSON());
-    })
+    });
 
-    let layout = getStore('layout');
+    const layout = getStore('layout');
     if (layout) api.fromJSON(layout);
 
     addPanel('screen');
@@ -188,12 +198,17 @@ if (panel) {
 
   return (
     <SystemContext.Provider
-      value={{ system, store: { get: getStore, set: setStore } }}>
+      value={{ system, store: { get: getStore, set: setStore } }}
+    >
       <DockviewReact
-        className={((darkMode === "system") ? systemDarkMode : (darkMode === "true")) ?
-          "bp5-dark dockview-theme-dark root-container" : "dockview-theme-light root-container"}
+        className={
+          (darkMode === 'system' ? systemDarkMode : darkMode === 'true')
+            ? 'bp5-dark dockview-theme-dark root-container'
+            : 'dockview-theme-light root-container'
+        }
         components={components}
-        onReady={onReady} />
+        onReady={onReady}
+      />
     </SystemContext.Provider>
   );
 }

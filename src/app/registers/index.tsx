@@ -28,8 +28,8 @@ export default function Debugger() {
 
   const [cpuState, setCpuState] = useState(context.system.state);
 
-  function updateState (e: CustomEvent) {
-    setCpuState({... e.detail.cpu });
+  function updateState(e: CustomEvent) {
+    setCpuState({ ...e.detail.cpu });
   }
 
   useEffect(() => {
@@ -46,100 +46,118 @@ export default function Debugger() {
   });
 
   function format(v, d = 2) {
-    if (typeof v !== 'number') return "???";
-    const padded = "000" + v.toString(16).toUpperCase();
-    return padded.substring(padded.length - d)
+    if (typeof v !== 'number') return '???';
+    const padded = `000${v.toString(16).toUpperCase()}`;
+    return padded.substring(padded.length - d);
   }
 
   function encodeSC() {
     return format(
       (cpuState.i << 6) |
-      (cpuState.u ? 0b100000 : 0) |
-      (cpuState.d ? 0b010000 : 0) |
-      (cpuState.n ? 0b001000 : 0) |
-      (cpuState.v ? 0b000100 : 0) |
-      (cpuState.c ? 0b000010 : 0) |
-      (cpuState.z ? 0b000001 : 0)
-      );
+        (cpuState.u ? 0b100000 : 0) |
+        (cpuState.d ? 0b010000 : 0) |
+        (cpuState.n ? 0b001000 : 0) |
+        (cpuState.v ? 0b000100 : 0) |
+        (cpuState.c ? 0b000010 : 0) |
+        (cpuState.z ? 0b000001 : 0),
+    );
   }
 
-  return <div className="registers">
-    <table>
-      <thead>
-        <tr>
-          <th colSpan={5}>Registers</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>CB</td><td>{format(cpuState.cb)}</td>
-          <td>PC</td><td colSpan={2}>{format(cpuState.pc, 4)}</td>
-        </tr>
-        <tr>
-          <td>NB</td><td>{format(cpuState.nb)}</td>
-          <td>SP</td><td colSpan={2}>{format(cpuState.sp, 4)}</td>
-        </tr>
-        <tr>
-          <td colSpan={2}></td>
-          <td>BA</td><td>{format(cpuState.b)}</td><td>{format(cpuState.a)}</td>
-        </tr>
-        <tr>
-          <td rowSpan={2}>EP</td><td rowSpan={2}>{format(cpuState.ep)}</td>
-          <td>HL</td><td>{format(cpuState.h)}</td><td>{format(cpuState.l)}</td>
-        </tr>
-        <tr>
-          <td>BR</td><td>{format(cpuState.br)}</td>
-        </tr>
-        <tr>
-          <td>XP</td><td>{format(cpuState.xp)}</td>
-          <td>IX</td><td colSpan={2}>{format(cpuState.ix, 4)}</td>
-        </tr>
-        <tr>
-          <td>YP</td><td>{format(cpuState.yp)}</td>
-          <td>IY</td><td colSpan={2}>{format(cpuState.iy, 4)}</td>
-        </tr>
-      </tbody>
-    </table>
-    <table>
-      <thead>
-        <tr><th colSpan={8}>Flags</th></tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>SC</td>
-          <td>I</td>
-          <td>U</td>
-          <td>D</td>
-          <td>N</td>
-          <td>V</td>
-          <td>C</td>
-          <td>Z</td>
-        </tr>
-        <tr>
-          <td>{encodeSC(cpuState)}</td>
-          <td>{cpuState.i}</td>
-          <td>{cpuState.u ? "\u2612" : "\u2610"}</td>
-          <td>{cpuState.d ? "\u2612" : "\u2610"}</td>
-          <td>{cpuState.n ? "\u2612" : "\u2610"}</td>
-          <td>{cpuState.v ? "\u2612" : "\u2610"}</td>
-          <td>{cpuState.c ? "\u2612" : "\u2610"}</td>
-          <td>{cpuState.z ? "\u2612" : "\u2610"}</td>
-        </tr>
-        <tr>
-          <td colSpan={4} />
-          <td>F3</td>
-          <td>F2</td>
-          <td>F1</td>
-          <td>F0</td>
-        </tr>
-        <tr>
-          <td colSpan={4} />
-          <td>{cpuState.f3 ? "\u2612" : "\u2610"}</td>
-          <td>{cpuState.f2 ? "\u2612" : "\u2610"}</td>
-          <td>{cpuState.f1 ? "\u2612" : "\u2610"}</td>
-          <td>{cpuState.f0 ? "\u2612" : "\u2610"}</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>;
+  return (
+    <div className="registers">
+      <table>
+        <thead>
+          <tr>
+            <th colSpan={5}>Registers</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>CB</td>
+            <td>{format(cpuState.cb)}</td>
+            <td>PC</td>
+            <td colSpan={2}>{format(cpuState.pc, 4)}</td>
+          </tr>
+          <tr>
+            <td>NB</td>
+            <td>{format(cpuState.nb)}</td>
+            <td>SP</td>
+            <td colSpan={2}>{format(cpuState.sp, 4)}</td>
+          </tr>
+          <tr>
+            <td colSpan={2} />
+            <td>BA</td>
+            <td>{format(cpuState.b)}</td>
+            <td>{format(cpuState.a)}</td>
+          </tr>
+          <tr>
+            <td rowSpan={2}>EP</td>
+            <td rowSpan={2}>{format(cpuState.ep)}</td>
+            <td>HL</td>
+            <td>{format(cpuState.h)}</td>
+            <td>{format(cpuState.l)}</td>
+          </tr>
+          <tr>
+            <td>BR</td>
+            <td>{format(cpuState.br)}</td>
+          </tr>
+          <tr>
+            <td>XP</td>
+            <td>{format(cpuState.xp)}</td>
+            <td>IX</td>
+            <td colSpan={2}>{format(cpuState.ix, 4)}</td>
+          </tr>
+          <tr>
+            <td>YP</td>
+            <td>{format(cpuState.yp)}</td>
+            <td>IY</td>
+            <td colSpan={2}>{format(cpuState.iy, 4)}</td>
+          </tr>
+        </tbody>
+      </table>
+      <table>
+        <thead>
+          <tr>
+            <th colSpan={8}>Flags</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>SC</td>
+            <td>I</td>
+            <td>U</td>
+            <td>D</td>
+            <td>N</td>
+            <td>V</td>
+            <td>C</td>
+            <td>Z</td>
+          </tr>
+          <tr>
+            <td>{encodeSC(cpuState)}</td>
+            <td>{cpuState.i}</td>
+            <td>{cpuState.u ? '\u2612' : '\u2610'}</td>
+            <td>{cpuState.d ? '\u2612' : '\u2610'}</td>
+            <td>{cpuState.n ? '\u2612' : '\u2610'}</td>
+            <td>{cpuState.v ? '\u2612' : '\u2610'}</td>
+            <td>{cpuState.c ? '\u2612' : '\u2610'}</td>
+            <td>{cpuState.z ? '\u2612' : '\u2610'}</td>
+          </tr>
+          <tr>
+            <td colSpan={4} />
+            <td>F3</td>
+            <td>F2</td>
+            <td>F1</td>
+            <td>F0</td>
+          </tr>
+          <tr>
+            <td colSpan={4} />
+            <td>{cpuState.f3 ? '\u2612' : '\u2610'}</td>
+            <td>{cpuState.f2 ? '\u2612' : '\u2610'}</td>
+            <td>{cpuState.f1 ? '\u2612' : '\u2610'}</td>
+            <td>{cpuState.f0 ? '\u2612' : '\u2610'}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  );
 }

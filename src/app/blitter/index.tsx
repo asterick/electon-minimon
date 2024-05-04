@@ -28,7 +28,7 @@ export default function Debugger() {
 
   const [state, setState] = useState(context.system.state);
 
-  function updateState (e: CustomEvent) {
+  function updateState(e: CustomEvent) {
     setState(e.detail);
   }
 

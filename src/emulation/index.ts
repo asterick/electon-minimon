@@ -16,12 +16,12 @@ ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+import { SocketAddress } from 'net';
 import { struct } from './state';
 import Audio from './audio';
 
 import AssemblyCore from '../../assets/libminimon.wasm';
 import Tracer from './trace';
-import { SocketAddress } from 'net';
 
 const KEYBOARD_CODES = {
   67: 0b00000001,
@@ -39,14 +39,23 @@ const CPU_FREQ = 4000000;
 
 export default class Minimon extends EventTarget {
   public state: Object | null;
+
   public audio: Audio;
+
   private cpu_state: number;
+
   private machineBytes: Uint8Array | null;
+
   private systemTime: number;
+
   private breakpoints: Array<number>;
+
   private inputState: number;
+
   private tracer: Tracer;
+
   private exports;
+
   private runTimer;
 
   public clearColor = { r: 1, g: 1, b: 1 };
@@ -57,7 +66,7 @@ export default class Minimon extends EventTarget {
     this.cpu_state = 0;
     this.inputState = 0b1111111111;
     this.audio = new Audio();
-    this.breakpoints = [];//0x9D, 0xB1];
+    this.breakpoints = []; // 0x9D, 0xB1];
     this.runTimer = null;
     this.machineBytes = null;
     this.state = null;
@@ -80,7 +89,12 @@ export default class Minimon extends EventTarget {
     const request = await fetch(AssemblyCore);
     const wasm = await WebAssembly.instantiate(await request.arrayBuffer(), {
       env: {
-        trace_access: (cpu: number, address: number, kind: number, data: number) => inst.tracer.traceAccess(cpu, address, kind, data),
+        trace_access: (
+          cpu: number,
+          address: number,
+          kind: number,
+          data: number,
+        ) => inst.tracer.traceAccess(cpu, address, kind, data),
         audio_push: () => {
           inst.audio.push(inst.state.buffers.audio);
         },
@@ -165,7 +179,9 @@ export default class Minimon extends EventTarget {
   };
 
   update() {
-    this.dispatchEvent(new CustomEvent('update:state', { detail: { ... this.state } }));
+    this.dispatchEvent(
+      new CustomEvent('update:state', { detail: { ...this.state } }),
+    );
     this.tracer.update();
   }
 
@@ -178,7 +194,9 @@ export default class Minimon extends EventTarget {
       this.breakpoints.push(address);
     }
 
-    this.dispatchEvent(new CustomEvent('update:breakpoints', { detail: this.breakpoints }));
+    this.dispatchEvent(
+      new CustomEvent('update:breakpoints', { detail: this.breakpoints }),
+    );
   }
 
   private updateInput() {
@@ -199,7 +217,7 @@ export default class Minimon extends EventTarget {
     }
 
     // Generate our gradient
-    this.clearColor = { ... palette[0] };
+    this.clearColor = { ...palette[0] };
     let index = 0;
     for (let i = 0; i <= 0xff; i++) {
       const offset = i / 255.0;
@@ -217,12 +235,11 @@ export default class Minimon extends EventTarget {
       const g = next.g * weight + current.g * (1 - weight);
       const b = next.b * weight + current.b * (1 - weight);
 
-      this.state.buffers.palette[i] = (
+      this.state.buffers.palette[i] =
         0xff000000 +
         +Math.min(0xff, Math.floor(r * 0x100)) +
         Math.min(0xff, Math.floor(g * 0x100)) * 0x0100 +
-        Math.min(0xff, Math.floor(b * 0x100)) * 0x010000
-      );
+        Math.min(0xff, Math.floor(b * 0x100)) * 0x010000;
     }
   }
 

@@ -244,11 +244,9 @@ export default class MenuBuilder {
         label: 'Toggle &Full Screen',
         accelerator: 'F11',
         click: () => {
-          this.mainWindow.setFullScreen(
-            !this.mainWindow.isFullScreen(),
-          );
+          this.mainWindow.setFullScreen(!this.mainWindow.isFullScreen());
         },
-      }
+      },
     ];
 
     const templateDefault = [
@@ -287,7 +285,7 @@ export default class MenuBuilder {
           process.env.NODE_ENV === 'development' ||
           process.env.DEBUG_PROD === 'true'
             ? [
-                ... viewCommonDefault,
+                ...viewCommonDefault,
                 {
                   label: '&Reload',
                   accelerator: 'Ctrl+R',
