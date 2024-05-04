@@ -22,6 +22,8 @@ import { AutoSizer, List } from 'react-virtualized';
 
 import SystemContext from '../context';
 import './style.css';
+import { TraceAccess } from '../../emulation/trace';
+import { contextIsolated } from 'process';
 
 /*
  * document.querySelectorAll( "[data-address]:hover" )
@@ -37,6 +39,7 @@ export default function Debugger() {
   const [followPC, setFollowPC] = useState(true);
   const [page, setPage] = useState('bios');
   const [disassembly, setDisassembly] = useState(context.system.tracer.render(page));
+  const [breakpoints, setBreakpoints] = useState(context.system.breakpoints);
 
   function updateState (e: CustomEvent) {
     setState(e.detail);
@@ -52,10 +55,8 @@ export default function Debugger() {
       else
         newPage = `rom:${pc >> 15}`
 
-      if (newPage !== page) {
-        setPage(newPage);
-        setDisassembly(context.system.tracer.render(newPage));
-      }
+      setPage(newPage);
+      setDisassembly(context.system.tracer.render(newPage));
     }
   }
   function updateRunning (e: CustomEvent) {
@@ -67,6 +68,39 @@ export default function Debugger() {
   function updateTrace (e: CustomEvent) {
     setDisassembly(context.system.tracer.render(page));
   }
+  function updateBreakpoints (e: CustomEvent) {
+    setBreakpoints([... e.detail]);
+  }
+
+  function debuggerHotKeys(e: KeyboardEvent) {
+    const elems = document.querySelectorAll("[data-address]:hover");
+
+    if (elems.length > 0) {
+      const address = parseInt(elems[elems.length - 1].dataset.address);
+
+      switch (e.key) {
+      case 'b':
+        context.system.toggleBreakpoint(address);
+        break ;
+      case 'u':
+        context.system.tracer.forceTrace(address, TraceAccess.NONE);
+        break ;
+      case 'c':
+        context.system.tracer.forceTrace(address, TraceAccess.INSTRUCTION);
+        break ;
+      case 'd':
+        context.system.tracer.forceTrace(address, TraceAccess.DATA);
+        break ;
+      case 'w':
+        context.system.tracer.forceTrace(address, TraceAccess.DATA | TraceAccess.WORD_LO);
+        break ;
+      default:
+        return ;
+      }
+
+      e.preventDefault();
+    }
+  }
 
   useEffect(() => {
     if (!ref.current) {
@@ -74,27 +108,29 @@ export default function Debugger() {
         prevPage: page
       };
 
+      document.body.addEventListener('keydown', debuggerHotKeys);
       context.system.addEventListener('update:cartridgeChanged', updatePages);
       context.system.addEventListener('update:state', updateState);
       context.system.addEventListener('update:running', updateRunning);
+      context.system.addEventListener('update:breakpoints', updateBreakpoints);
     } else {
       context.system.tracer.removeEventListener(`trace:changed[${ref.current.prevPage}]`, updateTrace);
     }
 
     context.system.tracer.addEventListener(`trace:changed[${page}]`, updateTrace);
     ref.current.prevPage = page;
+    setDisassembly(context.system.tracer.render(page));
 
     return () => {
+      document.body.removeEventListener('keydown', debuggerHotKeys);
       context.system.tracer.removeEventListener(`trace:changed[${page}]`, updateTrace);
       context.system.removeEventListener('update:cartridgeChanged', updatePages);
       context.system.removeEventListener('update:state', updateState);
       context.system.removeEventListener('update:running', updateRunning);
-      context.system.tracer.removeEventListener('trace:changed', updateTrace);
+      context.system.removeEventListener('update:breakpoints', updateBreakpoints);
       ref.current = null;
     };
   });
-
-  const pc = context.system.physicalPC();
 
   function rowRenderer({key, index, style}) {
     const { address, label, operation, parameters, raw } = disassembly[index];
@@ -102,16 +138,8 @@ export default function Debugger() {
     let padAddress = "00000"+address.toString(16).toUpperCase();
     let className = "entry";
 
-    if (address == pc) {
-      className += " pc";
-    }
-
-    if (context.system.breakpoints.indexOf(address) > 0) {
-      className += " breakpoint"
-    }
-
     return (
-      <div className={className} data-address={address} key={key} style={style}>
+      <div className={className} data-address={address} key={key} style={style} onDoubleClick={() => context.system.toggleBreakpoint(address)}>
         <span className="address">{padAddress.substring(padAddress.length - 6)}</span>
         <span className="raw">{raw}</span>
         <span className="label">
@@ -119,12 +147,22 @@ export default function Debugger() {
         </span>
         <span className="operation">{operation}</span>
         <span className="parameters" dangerouslySetInnerHTML={{__html: parameters}} />
-        </div>
+      </div>
     );
+  }
+
+  let addressStyles = `
+  [data-address="${context.system.physicalPC()}"] .operation:before {
+    content: "\\21E2";
+  }`;
+
+  if (breakpoints.length > 0) {
+    addressStyles += breakpoints.map((address) => `[data-address="${address}"] .operation:after`).join(", ") + "{ content: '\\2022'; }";
   }
 
   return (
     <div className="debugger">
+      <style dangerouslySetInnerHTML={{__html: addressStyles }} />
       <ControlGroup className="toolbar">
         <Tooltip content={running ? 'Stop' : 'Play'} compact={true}>
           <Button

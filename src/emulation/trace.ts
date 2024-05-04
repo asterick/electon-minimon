@@ -309,6 +309,29 @@ export default class Tracer extends EventTarget {
       this.dirty = {};
     }
 
+  forceTrace(address: number, kind: number) {
+    const mask = ~(TraceAccess.READ | TraceAccess.WRITE);
+
+    // Trace accesses, with clear on write to ram
+    this.trace[address] = kind & mask;
+
+    // Mark altered banks as dirty
+    let bank;
+
+    if (address < 0x1000) {
+      bank = "bios";
+    } else if (address < 0x2000) {
+      bank = "ram";
+    } else {
+      bank = `rom:${address >> 15}`;
+    }
+
+    this.traceBank[bank].dirty = true;
+
+    const detail = this.traceBank[bank];
+    this.dispatchEvent(new CustomEvent(`trace:changed[${bank}]`, { detail }));
+  }
+
   traceAccess(cpu: number, address: number, kind: number, data: number) {
     const prev = this.trace[address];
     const mask = ~(TraceAccess.READ | TraceAccess.WRITE);

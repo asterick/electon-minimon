@@ -21,6 +21,7 @@ import Audio from './audio';
 
 import AssemblyCore from '../../assets/libminimon.wasm';
 import Tracer from './trace';
+import { SocketAddress } from 'net';
 
 const KEYBOARD_CODES = {
   67: 0b00000001,
@@ -56,7 +57,7 @@ export default class Minimon extends EventTarget {
     this.cpu_state = 0;
     this.inputState = 0b1111111111;
     this.audio = new Audio();
-    this.breakpoints = [];
+    this.breakpoints = [];//0x9D, 0xB1];
     this.runTimer = null;
     this.machineBytes = null;
     this.state = null;
@@ -166,6 +167,18 @@ export default class Minimon extends EventTarget {
   update() {
     this.dispatchEvent(new CustomEvent('update:state', { detail: { ... this.state } }));
     this.tracer.update();
+  }
+
+  toggleBreakpoint(address) {
+    const index = this.breakpoints.indexOf(address);
+
+    if (index >= 0) {
+      this.breakpoints.splice(index, 1);
+    } else {
+      this.breakpoints.push(address);
+    }
+
+    this.dispatchEvent(new CustomEvent('update:breakpoints', { detail: this.breakpoints }));
   }
 
   private updateInput() {

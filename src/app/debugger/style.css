@@ -29,8 +29,8 @@
     flex: 1 0 auto;
     font-family: monospace;
 
-    .pc .operation:before,
-    .pc .operation:after {
+    .operation:before,
+    .operation:after {
       position: absolute;
       display: inline-block;
       top: 50%;
@@ -38,16 +38,14 @@
       font-size: 25px;
     }
 
-    .pc .operation:before {
+    .operation:before {
       left: -2ex;
-      color: $green3;
-      content: "\21E2";
+      color: $gold3;
     }
 
-    .pc .operation:after {
+    .operation:after {
       left: -1ex;
       color: $red3;
-      content: "\2022";
     }
 
     .entry {
