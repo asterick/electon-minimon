@@ -29,9 +29,31 @@
     flex: 1 0 auto;
     font-family: monospace;
 
+    .pc .operation:before,
+    .pc .operation:after {
+      position: absolute;
+      display: inline-block;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 25px;
+    }
+
+    .pc .operation:before {
+      left: -2ex;
+      color: $green3;
+      content: "\21E2";
+    }
+
+    .pc .operation:after {
+      left: -1ex;
+      color: $red3;
+      content: "\2022";
+    }
+
     .entry {
       display: flex;
       flex-direction: row;
+      align-items: center;
 
       .label,
       .raw,
@@ -55,7 +77,6 @@
         min-width: 0;
       }
 
-
       .label {
         min-width: 0;
         width: 20ex;
@@ -64,6 +85,7 @@
       }
 
       .operation {
+        position: relative;
         width: 5em;
         flex-shrink: false;
       }

@@ -46,6 +46,7 @@ export default function Debugger() {
   });
 
   function format(v, d = 2) {
+    if (typeof v !== 'number') return "???";
     const padded = "000" + v.toString(16).toUpperCase();
     return padded.substring(padded.length - d)
   }

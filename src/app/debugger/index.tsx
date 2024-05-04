@@ -94,13 +94,24 @@ export default function Debugger() {
     };
   });
 
+  const pc = context.system.physicalPC();
+
   function rowRenderer({key, index, style}) {
     const { address, label, operation, parameters, raw } = disassembly[index];
 
     let padAddress = "00000"+address.toString(16).toUpperCase();
+    let className = "entry";
+
+    if (address == pc) {
+      className += " pc";
+    }
+
+    if (context.system.breakpoints.indexOf(address) > 0) {
+      className += " breakpoint"
+    }
 
     return (
-      <div className="entry" data-address={address} key={key} style={style}>
+      <div className={className} data-address={address} key={key} style={style}>
         <span className="address">{padAddress.substring(padAddress.length - 6)}</span>
         <span className="raw">{raw}</span>
         <span className="label">

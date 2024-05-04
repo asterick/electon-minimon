@@ -164,7 +164,7 @@ export default class Minimon extends EventTarget {
   };
 
   update() {
-    this.dispatchEvent(new CustomEvent('update:state', { detail: this.state }));
+    this.dispatchEvent(new CustomEvent('update:state', { detail: { ... this.state } }));
     this.tracer.update();
   }
 

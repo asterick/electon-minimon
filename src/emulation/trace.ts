@@ -202,11 +202,11 @@ export default class Tracer extends EventTarget {
         case Table.Argument.MEM_SP_DISP: return `[SP${signed(s8())}]`;
         case Table.Argument.MEM_IX_DISP: return `[IX${signed(s8())}]`;
         case Table.Argument.MEM_IY_DISP: return `[IY${signed(s8())}]`;
-        case Table.Argument.MEM_ABS16: return `<span class="symbol">[</span><span class="literal">0${format(i16())}h</span><span class="symbol">]</span>`;
+        case Table.Argument.MEM_ABS16: return `<span class="symbol">[</span><span class="literal">0${format(i16(), 4)}h</span><span class="symbol">]</span>`;
         case Table.Argument.MEM_BR: return `<span class="symbol">[</span><span class="register">BR</span><span class="symbol">:</span><span class="literal">0${format(i8())}h</span><span class="symbol">]</span>`;
         case Table.Argument.MEM_VECTOR: return `<span class="symbol">[</span><span class="literal">0${format(i8())}h</span><span class="symbol">]</span>`;
         case Table.Argument.IMM_8: return `<span class="literal">#0${format(i8())}h</span>`;
-        case Table.Argument.IMM_16: return `<span class="literal">#0${format(i16())}h</span>`;
+        case Table.Argument.IMM_16: return `<span class="literal">#0${format(i16(), 4)}h</span>`;
         case Table.Argument.REL_8: return pcRelative(address + s8());
         case Table.Argument.REL_16: return pcRelative(address + s16());
       }
