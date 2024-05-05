@@ -517,7 +517,7 @@ export default class Tracer extends EventTarget {
           loc = (bank << 15) | (loc & 0x7FFF);
         }
 
-        data = `${format(lo)} ${format(hi)} ${format(bank)} <span class="return" data-offset="${loc}">${format(loc, 6)}</span>`;
+        data = `${format(lo)} ${format(hi)} ${format(bank)} <span class="return" data-address="${loc}">${format(loc, 6)}</span>`;
       } else if (trace & TraceAccess.WORD_LO) {
         const lo = ram[address++],
               hi = ram[address++];
