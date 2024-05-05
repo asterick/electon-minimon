@@ -30,7 +30,6 @@ export default function Stack() {
   const [stack, setStack] = useState([]);
 
   function updateState(e: CustomEvent) {
-    console.log(context.system.tracer.unrollStack());
     setStack(context.system.tracer.unrollStack());
   }
 
@@ -50,20 +49,20 @@ export default function Stack() {
   function rowRenderer({ key, index, style }) {
     const { address, data } = stack[index];
 
-    return <div><span className="address">{address}</span><span className="data" dangerouslySetInnerHTML={{__html: data}}/></div>
+    return <div><span className="address">{address}</span><span className="data" dangerouslySetInnerHTML={{ __html: data }} /></div>
   }
 
   return <div className="stack">
-      <AutoSizer>
-        {({ height, width }) => (
-          <List
-            height={height}
-            rowCount={stack.length}
-            rowHeight={20}
-            rowRenderer={rowRenderer}
-            width={width}
-          />
-        )}
-      </AutoSizer>
-    </div>;
+    <AutoSizer>
+      {({ height, width }) => (
+        <List
+          height={height}
+          rowCount={stack.length}
+          rowHeight={20}
+          rowRenderer={rowRenderer}
+          width={width}
+        />
+      )}
+    </AutoSizer>
+  </div>;
 }
