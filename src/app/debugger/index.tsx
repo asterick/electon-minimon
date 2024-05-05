@@ -40,11 +40,13 @@ export default function Debugger() {
   const [pageNames, setPageNames] = useState(context.system.tracer.getPages());
   const [followPC, setFollowPC] = useState(true);
   const [page, setPage] = useState('bios');
-  const [disassembly, setDisassembly] = useState(context.system.tracer.render(page));
+  const [disassembly, setDisassembly] = useState(
+    context.system.tracer.render(page),
+  );
   const [breakpoints, setBreakpoints] = useState(context.system.breakpoints);
   const [scrollIndex, setScrollIndex] = useState(0);
 
-  function scrollTo(address:Number) {
+  function scrollTo(address: Number) {
     let newPage;
 
     if (address <= 0x0fff) newPage = 'bios';
@@ -56,7 +58,7 @@ export default function Debugger() {
 
     let idx = 0;
     for (; idx < disassembly.length; idx++) {
-      if (disassembly[idx].address > address) break ;
+      if (disassembly[idx].address > address) break;
     }
 
     listRef.current.scrollToRow(Math.max(0, idx - 1));
@@ -108,9 +110,8 @@ export default function Debugger() {
           );
           break;
         case 'j':
-          console.log(elems);
           scrollTo(address);
-          break ;
+          break;
         default:
           return;
       }

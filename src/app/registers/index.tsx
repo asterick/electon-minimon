@@ -136,12 +136,24 @@ export default function Debugger() {
           <tr>
             <td>{encodeSC(cpuState)}</td>
             <td>{cpuState.i}</td>
-            <td><Icon icon={cpuState.u ? 'selection' : 'circle'}/></td>
-            <td><Icon icon={cpuState.d ? 'selection' : 'circle'}/></td>
-            <td><Icon icon={cpuState.n ? 'selection' : 'circle'}/></td>
-            <td><Icon icon={cpuState.v ? 'selection' : 'circle'}/></td>
-            <td><Icon icon={cpuState.c ? 'selection' : 'circle'}/></td>
-            <td><Icon icon={cpuState.z ? 'selection' : 'circle'}/></td>
+            <td>
+              <Icon icon={cpuState.u ? 'selection' : 'circle'} />
+            </td>
+            <td>
+              <Icon icon={cpuState.d ? 'selection' : 'circle'} />
+            </td>
+            <td>
+              <Icon icon={cpuState.n ? 'selection' : 'circle'} />
+            </td>
+            <td>
+              <Icon icon={cpuState.v ? 'selection' : 'circle'} />
+            </td>
+            <td>
+              <Icon icon={cpuState.c ? 'selection' : 'circle'} />
+            </td>
+            <td>
+              <Icon icon={cpuState.z ? 'selection' : 'circle'} />
+            </td>
           </tr>
           <tr>
             <td colSpan={4} />
@@ -152,10 +164,18 @@ export default function Debugger() {
           </tr>
           <tr>
             <td colSpan={4} />
-            <td><Icon icon={cpuState.f3 ? 'selection' : 'circle'}/></td>
-            <td><Icon icon={cpuState.f2 ? 'selection' : 'circle'}/></td>
-            <td><Icon icon={cpuState.f1 ? 'selection' : 'circle'}/></td>
-            <td><Icon icon={cpuState.f0 ? 'selection' : 'circle'}/></td>
+            <td>
+              <Icon icon={cpuState.f3 ? 'selection' : 'circle'} />
+            </td>
+            <td>
+              <Icon icon={cpuState.f2 ? 'selection' : 'circle'} />
+            </td>
+            <td>
+              <Icon icon={cpuState.f1 ? 'selection' : 'circle'} />
+            </td>
+            <td>
+              <Icon icon={cpuState.f0 ? 'selection' : 'circle'} />
+            </td>
           </tr>
         </tbody>
       </table>

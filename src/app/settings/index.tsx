@@ -88,7 +88,9 @@ export default function Settings() {
   }
 
   function WrappedColorPicker({ onSelect, ...rest }) {
-    return <SketchPicker {...rest} disableAlpha onChange={(c) => onSelect(c.hex)} />
+    return (
+      <SketchPicker {...rest} disableAlpha onChange={(c) => onSelect(c.hex)} />
+    );
   }
 
   return (

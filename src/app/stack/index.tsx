@@ -17,19 +17,21 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
 import { useContext, useEffect, useState, useRef } from 'react';
+import { AutoSizer, List } from 'react-virtualized';
 
 import SystemContext from '../context';
 
 import './style.css';
 
-export default function Debugger() {
+export default function Stack() {
   const ref = useRef(false);
   const context = useContext(SystemContext);
 
-  const [state, setState] = useState(context.system.state);
+  const [stack, setStack] = useState([]);
 
   function updateState(e: CustomEvent) {
-    setState(e.detail);
+    console.log(context.system.tracer.unrollStack());
+    setStack(context.system.tracer.unrollStack());
   }
 
   useEffect(() => {
@@ -45,5 +47,23 @@ export default function Debugger() {
     };
   });
 
-  return <div />;
+  function rowRenderer({ key, index, style }) {
+    const { address, data } = stack[index];
+
+    return <div><span className="address">{address}</span><span className="data" dangerouslySetInnerHTML={{__html: data}}/></div>
+  }
+
+  return <div className="stack">
+      <AutoSizer>
+        {({ height, width }) => (
+          <List
+            height={height}
+            rowCount={stack.length}
+            rowHeight={20}
+            rowRenderer={rowRenderer}
+            width={width}
+          />
+        )}
+      </AutoSizer>
+    </div>;
 }

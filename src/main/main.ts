@@ -154,6 +154,6 @@ app
   })
   .catch(console.log);
 
-nativeTheme.on('updated', (e) => {
+nativeTheme.on('updated', () => {
   mainWindow?.webContents.send('dark-mode', nativeTheme.shouldUseDarkColors);
 });

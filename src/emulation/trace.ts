@@ -31,7 +31,9 @@ const BreakInstructions = [
   'JRL',
   'JP',
   'DJR',
-  'RET', 'RETS', 'RETI',
+  'RET',
+  'RETS',
+  'RETI',
   IllegalInstruction,
 ];
 
@@ -105,12 +107,15 @@ export default class Tracer extends EventTarget {
 
   private labels: Object;
 
+  private system: Minimon;
+
   constructor(system: Minimon) {
     super();
 
     this.trace = new Uint32Array(0x200000);
     this.dirty = {};
     this.labels = {};
+    this.system = system;
 
     this.traceBank = {
       bios: {
@@ -171,7 +176,7 @@ export default class Tracer extends EventTarget {
     const render = (bank.render = []);
     let { address, data } = bank;
     let index = 0;
-    let jumpPage = (address & ~0x7fff);
+    let jumpPage = address & ~0x7fff;
 
     function i8() {
       return address++, data[index++];
@@ -187,13 +192,17 @@ export default class Tracer extends EventTarget {
     }
 
     const pcRelative = (v) => {
-      const rel = (v & 0x8000) ? (jumpPage | (v & 0x7fff)) : v;
-      console.log(jumpPage.toString(16), (v & 0x7fff).toString(16),rel.toString(16))
+      const rel = v & 0x8000 ? jumpPage | (v & 0x7fff) : v;
+      console.log(
+        jumpPage.toString(16),
+        (v & 0x7fff).toString(16),
+        rel.toString(16),
+      );
 
       if (this.labels[rel]) {
         return `<span class="identifier" data-address="${rel}">${this.labels[rel]}</span>`;
       }
-      return `<span class="literal" data-address="${rel}">#${format(rel,6)}h</literal>`;
+      return `<span class="literal" data-address="${rel}">#${format(rel, 6)}h</literal>`;
     };
 
     function signed(val) {
@@ -279,7 +288,7 @@ export default class Tracer extends EventTarget {
     }
 
     let trace = this.trace[address];
-    jumpPage = address & ~0x7FFF;
+    jumpPage = address & ~0x7fff;
     while (index < data.length) {
       if (trace & TraceAccess.INSTRUCTION) {
         let terminate = false;
@@ -309,7 +318,6 @@ export default class Tracer extends EventTarget {
               );
             }
 
-
             if (index > data.length) {
               operation = IllegalInstruction;
               parameters = [];
@@ -317,12 +325,14 @@ export default class Tracer extends EventTarget {
               terminate = true;
             } else if (BreakInstructions.indexOf(operation) >= 0) {
               terminate = true;
+            } else if (
+              operation === 'LD' &&
+              args[0] == Table.Argument.REG_NB &&
+              args[1] == Table.Argument.IMM_8
+            ) {
+              jumpPage = data[index - 1] << 15;
             } else {
-              if (operation === "LD" && args[0] == Table.Argument.REG_NB && args[1] == Table.Argument.IMM_8) {
-                jumpPage = data[index-1] << 15;
-              } else {
-                jumpPage = address & ~0x7FFF;
-              }
+              jumpPage = address & ~0x7fff;
             }
           } else {
             operation = IllegalInstruction;
@@ -483,5 +493,42 @@ export default class Tracer extends EventTarget {
 
       this.traceBank[bank].dirty = this.dirty[bank] = true;
     }
+  }
+
+  unrollStack() {
+    let address = this.system.state.cpu.sp - 0x1000;
+    let ram = this.system.state.ram;
+    let render = [];
+
+    while (address <= ram.length) {
+      const trace = this.trace[address+0x1000];
+      const startAddress = format(address+0x1000, 6);
+      let data;
+
+      if (~trace & TraceAccess.STACK) {
+        break ;
+      } else if (trace & TraceAccess.RETURN_ADDRESS) {
+        const lo = ram[address++],
+              hi = ram[address++],
+              bank = ram[address++];
+        let loc = (hi << 8) | lo;
+
+        if (hi & 0x80) {
+          loc = (bank << 15) | (loc & 0x7FFF);
+        }
+
+        data = `${format(lo)} ${format(hi)} ${format(bank)} <span class="return" data-offset="${loc}">${format(loc, 6)}</span>`;
+      } else if (trace & TraceAccess.WORD_LO) {
+        const lo = ram[address++],
+              hi = ram[address++];
+        data = format(hi << 8 | lo, 4);
+      } else {
+        data = format(ram[address++]);
+      }
+
+      render.push({ address: startAddress, data })
+    }
+
+    return render;
   }
 }

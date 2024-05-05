@@ -1,0 +1,40 @@
+@import "@blueprintjs/core/lib/scss/variables";
+
+.stack {
+  top: 0;
+  left: 0;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  padding: 5px;
+  font-family: monospace;
+
+  .bp5-dark & .address {
+    color: $green5;
+  }
+
+  & .address {
+    color: $green1;
+  }
+
+  .bp5-dark & .data {
+    color: $cerulean5;
+  }
+
+  & .data {
+    color: $cerulean1;
+  }
+
+  .bp5-dark & .return {
+    color: $gold5;
+  }
+
+  & .data {
+    color: $gold1;
+  }
+
+  .data,
+  .address {
+    padding: 0 1ex;
+  }
+}
