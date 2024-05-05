@@ -29,14 +29,10 @@ import { AutoSizer, List } from 'react-virtualized';
 import SystemContext from '../context';
 import './style.css';
 import { TraceAccess } from '../../emulation/trace';
-import { contextIsolated } from 'process';
-
-/*
- * document.querySelectorAll( "[data-address]:hover" )
- */
 
 export default function Debugger() {
   const ref = useRef(null);
+  const listRef = useRef(null);
   const context = useContext(SystemContext);
 
   const [running, setRunning] = useState(context.system.running);
@@ -44,24 +40,35 @@ export default function Debugger() {
   const [pageNames, setPageNames] = useState(context.system.tracer.getPages());
   const [followPC, setFollowPC] = useState(true);
   const [page, setPage] = useState('bios');
-  const [disassembly, setDisassembly] = useState(
-    context.system.tracer.render(page),
-  );
+  const [disassembly, setDisassembly] = useState(context.system.tracer.render(page));
   const [breakpoints, setBreakpoints] = useState(context.system.breakpoints);
+  const [scrollIndex, setScrollIndex] = useState(0);
+
+  function scrollTo(address:Number) {
+    let newPage;
+
+    if (address <= 0x0fff) newPage = 'bios';
+    else if (address <= 0x1fff) newPage = 'ram';
+    else newPage = `rom:${address >> 15}`;
+
+    setPage(newPage);
+    setDisassembly(context.system.tracer.render(newPage));
+
+    let idx = 0;
+    for (; idx < disassembly.length; idx++) {
+      if (disassembly[idx].address > address) break ;
+    }
+
+    console.log(newPage, idx)
+
+    listRef.current.scrollToRow(idx);
+  }
 
   function updateState(e: CustomEvent) {
     setState(e.detail);
 
     if (followPC) {
-      const pc = context.system.physicalPC();
-      let newPage;
-
-      if (pc <= 0x0fff) newPage = 'bios';
-      else if (pc <= 0x1fff) newPage = 'ram';
-      else newPage = `rom:${pc >> 15}`;
-
-      setPage(newPage);
-      setDisassembly(context.system.tracer.render(newPage));
+      scrollTo(context.system.physicalPC());
     }
   }
   function updateRunning(e: CustomEvent) {
@@ -102,6 +109,10 @@ export default function Debugger() {
             TraceAccess.DATA | TraceAccess.WORD_LO,
           );
           break;
+        case 'j':
+          console.log(elems);
+          scrollTo(address);
+          break ;
         default:
           return;
       }
@@ -248,6 +259,7 @@ export default function Debugger() {
         <AutoSizer>
           {({ height, width }) => (
             <List
+              ref={listRef}
               height={height}
               rowCount={disassembly.length}
               rowHeight={20}

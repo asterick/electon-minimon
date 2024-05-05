@@ -16,10 +16,6 @@ ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-/*
- * Todo: disassembler should look for writes to NB instead of assuming jump is in the same page
- */
-
 import Minimon from '.';
 import * as Table from '../core/instructions';
 
@@ -30,11 +26,12 @@ const IllegalInstruction = 'NDEF';
 const BreakInstructions = [
   'CALL',
   'CARS',
-  'JRS',
   'CARL',
+  'JRS',
   'JRL',
   'JP',
   'DJR',
+  'RET', 'RETS', 'RETI',
   IllegalInstruction,
 ];
 
@@ -174,6 +171,7 @@ export default class Tracer extends EventTarget {
     const render = (bank.render = []);
     let { address, data } = bank;
     let index = 0;
+    let jumpPage = (address & ~0x7fff);
 
     function i8() {
       return address++, data[index++];
@@ -189,12 +187,13 @@ export default class Tracer extends EventTarget {
     }
 
     const pcRelative = (v) => {
-      const rel = v & 0x8000 ? (address & ~0x7fff) | (v & 0x7fff) : v;
+      const rel = (v & 0x8000) ? (jumpPage | (v & 0x7fff)) : v;
+      console.log(jumpPage.toString(16), (v & 0x7fff).toString(16),rel.toString(16))
 
       if (this.labels[rel]) {
-        return `<span class="identifier">${this.labels[rel]}</span>`;
+        return `<span class="identifier" data-address="${rel}">${this.labels[rel]}</span>`;
       }
-      return `<span class="literal">#0${rel}h</literal>`;
+      return `<span class="literal" data-address="${rel}">#${format(rel,6)}h</literal>`;
     };
 
     function signed(val) {
@@ -280,6 +279,7 @@ export default class Tracer extends EventTarget {
     }
 
     let trace = this.trace[address];
+    jumpPage = address & ~0x7FFF;
     while (index < data.length) {
       if (trace & TraceAccess.INSTRUCTION) {
         let terminate = false;
@@ -309,6 +309,7 @@ export default class Tracer extends EventTarget {
               );
             }
 
+
             if (index > data.length) {
               operation = IllegalInstruction;
               parameters = [];
@@ -316,6 +317,12 @@ export default class Tracer extends EventTarget {
               terminate = true;
             } else if (BreakInstructions.indexOf(operation) >= 0) {
               terminate = true;
+            } else {
+              if (operation === "LD" && args[0] == Table.Argument.REG_NB && args[1] == Table.Argument.IMM_8) {
+                jumpPage = data[index-1] << 15;
+              } else {
+                jumpPage = address & ~0x7FFF;
+              }
             }
           } else {
             operation = IllegalInstruction;
@@ -335,6 +342,7 @@ export default class Tracer extends EventTarget {
             parameters: parameters.join(HTMLComma),
             raw: raw.join(' '),
           });
+
           trace = this.trace[address];
         } while (index < data.length && !terminate);
       } else if (data.length - index >= 2 && trace & TraceAccess.WORD_LO) {
