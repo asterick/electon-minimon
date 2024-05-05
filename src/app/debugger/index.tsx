@@ -59,9 +59,7 @@ export default function Debugger() {
       if (disassembly[idx].address > address) break ;
     }
 
-    console.log(newPage, idx)
-
-    listRef.current.scrollToRow(idx);
+    listRef.current.scrollToRow(Math.max(0, idx - 1));
   }
 
   function updateState(e: CustomEvent) {

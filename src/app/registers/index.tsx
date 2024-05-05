@@ -17,6 +17,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
 import { useContext, useEffect, useState, useRef } from 'react';
+import { Icon } from '@blueprintjs/core';
 
 import SystemContext from '../context';
 
@@ -135,12 +136,12 @@ export default function Debugger() {
           <tr>
             <td>{encodeSC(cpuState)}</td>
             <td>{cpuState.i}</td>
-            <td>{cpuState.u ? '\u2612' : '\u2610'}</td>
-            <td>{cpuState.d ? '\u2612' : '\u2610'}</td>
-            <td>{cpuState.n ? '\u2612' : '\u2610'}</td>
-            <td>{cpuState.v ? '\u2612' : '\u2610'}</td>
-            <td>{cpuState.c ? '\u2612' : '\u2610'}</td>
-            <td>{cpuState.z ? '\u2612' : '\u2610'}</td>
+            <td><Icon icon={cpuState.u ? 'selection' : 'circle'}/></td>
+            <td><Icon icon={cpuState.d ? 'selection' : 'circle'}/></td>
+            <td><Icon icon={cpuState.n ? 'selection' : 'circle'}/></td>
+            <td><Icon icon={cpuState.v ? 'selection' : 'circle'}/></td>
+            <td><Icon icon={cpuState.c ? 'selection' : 'circle'}/></td>
+            <td><Icon icon={cpuState.z ? 'selection' : 'circle'}/></td>
           </tr>
           <tr>
             <td colSpan={4} />
@@ -151,10 +152,10 @@ export default function Debugger() {
           </tr>
           <tr>
             <td colSpan={4} />
-            <td>{cpuState.f3 ? '\u2612' : '\u2610'}</td>
-            <td>{cpuState.f2 ? '\u2612' : '\u2610'}</td>
-            <td>{cpuState.f1 ? '\u2612' : '\u2610'}</td>
-            <td>{cpuState.f0 ? '\u2612' : '\u2610'}</td>
+            <td><Icon icon={cpuState.f3 ? 'selection' : 'circle'}/></td>
+            <td><Icon icon={cpuState.f2 ? 'selection' : 'circle'}/></td>
+            <td><Icon icon={cpuState.f1 ? 'selection' : 'circle'}/></td>
+            <td><Icon icon={cpuState.f0 ? 'selection' : 'circle'}/></td>
           </tr>
         </tbody>
       </table>
