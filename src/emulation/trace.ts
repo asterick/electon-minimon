@@ -193,11 +193,6 @@ export default class Tracer extends EventTarget {
 
     const pcRelative = (v) => {
       const rel = v & 0x8000 ? jumpPage | (v & 0x7fff) : v;
-      console.log(
-        jumpPage.toString(16),
-        (v & 0x7fff).toString(16),
-        rel.toString(16),
-      );
 
       if (this.labels[rel]) {
         return `<span class="identifier" data-address="${rel}">${this.labels[rel]}</span>`;
@@ -501,16 +496,16 @@ export default class Tracer extends EventTarget {
     let render = [];
 
     while (address <= ram.length) {
-      const trace = this.trace[address+0x1000];
-      const startAddress = format(address+0x1000, 6);
+      const trace = this.trace[address + 0x1000];
+      const startAddress = format(address + 0x1000, 6);
       let data;
 
       if (~trace & TraceAccess.STACK) {
-        break ;
+        break;
       } else if (trace & TraceAccess.RETURN_ADDRESS) {
         const lo = ram[address++],
-              hi = ram[address++],
-              bank = ram[address++];
+          hi = ram[address++],
+          bank = ram[address++];
         let loc = (hi << 8) | lo;
 
         if (hi & 0x80) {
@@ -520,7 +515,7 @@ export default class Tracer extends EventTarget {
         data = `${format(lo)} ${format(hi)} ${format(bank)} <span class="return" data-address="${loc}">${format(loc, 6)}</span>`;
       } else if (trace & TraceAccess.WORD_LO) {
         const lo = ram[address++],
-              hi = ram[address++];
+          hi = ram[address++];
         data = format(hi << 8 | lo, 4);
       } else {
         data = format(ram[address++]);
