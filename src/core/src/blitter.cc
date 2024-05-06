@@ -167,7 +167,7 @@ void Blitter::clock(Machine::State &cpu)
       int dx = sprite_x - 16;
       int dy = sprite_y - 16;
 
-      int invert = sprite_xflip ? 0b0000111 : 0;
+      int invert = sprite_xflip ? 0b0100111 : 0;
 
       if (dy <= -16 || dy >= SCREEN_HEIGHT)
         continue;
