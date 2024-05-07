@@ -159,6 +159,7 @@ extern "C" void cpu_step(Machine::State &cpu);
 extern "C" void cpu_advance(Machine::State &cpu, int ticks);
 
 // Bridge functions
+extern "C" void cpu_initialize(Machine::State &cpu);
 extern "C" void cpu_reset(Machine::State &cpu);
 extern "C" void cpu_advance(Machine::State &cpu, int ticks);
 extern "C" void set_sample_rate(Machine::State &cpu, int rate);

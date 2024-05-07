@@ -120,14 +120,7 @@ export default class Minimon extends EventTarget {
       inst.cpu_state,
     );
     inst.tracer = new Tracer(inst);
-
-    // Setup initial palette
-    for (let i = 0; i <= 0xff; i++) {
-      inst.state.buffers.palette[i] = (0x010101 * i) ^ ~0;
-      inst.state.buffers.weights[i] = i / 255.0;
-    }
-
-    inst.reset();
+    inst.exports.cpu_initialize(inst.cpu_state);
 
     return inst;
   }

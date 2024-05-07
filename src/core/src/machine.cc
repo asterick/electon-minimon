@@ -26,6 +26,11 @@ extern "C" const char *get_version()
   return "0.2.0";
 }
 
+extern "C" void cpu_initialize(Machine::State &cpu)
+{
+  cpu_reset(cpu);
+}
+
 extern "C" void cpu_reset(Machine::State &cpu)
 {
   Control::reset(cpu.ctrl);
@@ -39,16 +44,15 @@ extern "C" void cpu_reset(Machine::State &cpu)
   GPIO::reset(cpu.gpio);
   Audio::reset(cpu.audio);
 
+  // Load our reset vector
+  cpu.reg.pc = cpu_read16(cpu, 2 * (int)IRQ::IRQ_RESET, TRACE_VECTOR);
+  trace_access(cpu, calc_pc(cpu), TRACE_BRANCH_TARGET);
+
   cpu_writeSC(cpu, 0xC0);
   cpu.reg.ep = 0xFF;
   cpu.reg.xp = 0x00;
   cpu.reg.yp = 0x00;
   cpu.reg.nb = 0x01;
-
-  cpu.status = Machine::STATUS_NORMAL;
-  cpu.osc1_overflow = 0;
-
-  IRQ::trigger(cpu, IRQ::IRQ_RESET);
 }
 
 extern "C" void update_inputs(Machine::State &cpu, uint16_t value)
