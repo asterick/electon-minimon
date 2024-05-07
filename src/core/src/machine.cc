@@ -29,6 +29,8 @@ extern "C" const char *get_version()
 extern "C" void cpu_initialize(Machine::State &cpu)
 {
   cpu_reset(cpu);
+
+  cpu.osc1_overflow = 0;
 }
 
 extern "C" void cpu_reset(Machine::State &cpu)
@@ -53,6 +55,8 @@ extern "C" void cpu_reset(Machine::State &cpu)
   cpu.reg.xp = 0x00;
   cpu.reg.yp = 0x00;
   cpu.reg.nb = 0x01;
+
+  cpu.status = Machine::STATUS_NORMAL;
 }
 
 extern "C" void update_inputs(Machine::State &cpu, uint16_t value)
